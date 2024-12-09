@@ -1,15 +1,10 @@
 package view;
 
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.EventQueue;
-import java.awt.FlowLayout;
+import com.formdev.flatlaf.FlatLightLaf; // Import thư viện FlatLaf
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 
@@ -17,11 +12,18 @@ public class MainManage extends JFrame {
 
     private static final long serialVersionUID = 1L;
     private JPanel contentPane;
-    private JPanel cardPanel;  // Panel to hold other panels
+    private JPanel cardPanel;  // Panel để chứa các panel khác
     private CardLayout cardLayout;
-    private JButton currentActiveButton = null;  // Track the current active button
+    private JButton currentActiveButton = null;  // Theo dõi nút đang hoạt động
 
     public static void main(String[] args) {
+        // Thiết lập FlatLaf Look and Feel
+        try {
+            UIManager.setLookAndFeel(new FlatLightLaf()); // Áp dụng FlatLaf Light
+        } catch (UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
+
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 try {
@@ -36,30 +38,30 @@ public class MainManage extends JFrame {
 
     public MainManage() {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(0, 0, 700, 500); // Initial size, but will be maximized
-        setExtendedState(JFrame.MAXIMIZED_BOTH); // Maximize the frame to full screen
+        setBounds(0, 0, 700, 500); // Kích thước ban đầu, nhưng sẽ được tối đa hóa
+        setExtendedState(JFrame.MAXIMIZED_BOTH); // Tối đa hóa cửa sổ
 
-        // Set layout for contentPane
+        // Set layout cho contentPane
         contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-        contentPane.setLayout(new BorderLayout()); // Use BorderLayout to allow proper expansion of the cardPanel
+        contentPane.setLayout(new BorderLayout()); // Dùng BorderLayout để cho phép mở rộng cardPanel
         setContentPane(contentPane);
 
-        // Set a background color for the content panel
-        contentPane.setBackground(new Color(245, 245, 245)); // Light grey background for content pane
+        // Set background màu cho contentPane
+        contentPane.setBackground(new Color(245, 245, 245)); // Màu nền sáng cho contentPane
 
-        // Navigation panel (button panel)
+        // Panel điều hướng (button panel)
         JPanel navigationPanel = new JPanel();
-        navigationPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 20, 10));  // Horizontal layout
-        navigationPanel.setBackground(new Color(56, 142, 60)); // Green background for navigation panel
-        contentPane.add(navigationPanel, BorderLayout.NORTH);  // Add navigation panel to top
+        navigationPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 20, 10));  // Bố cục ngang
+        navigationPanel.setBackground(new Color(56, 142, 60)); // Màu nền xanh cho panel điều hướng
+        contentPane.add(navigationPanel, BorderLayout.NORTH);  // Thêm navigationPanel vào phần trên của contentPane
 
-        // Set border and style for navigation buttons
+        // Thiết lập border và style cho các nút điều hướng
         JButton btnListUsers = new JButton("List Users");
         styleButton(btnListUsers);
         btnListUsers.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                cardLayout.show(cardPanel, "ListUsers");  // Show "ListUsers" panel
+                cardLayout.show(cardPanel, "ListUsers");  // Hiển thị panel "ListUsers"
                 setActiveButton(btnListUsers);
             }
         });
@@ -69,60 +71,60 @@ public class MainManage extends JFrame {
         styleButton(btnListBlogs);
         btnListBlogs.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                cardLayout.show(cardPanel, "ListBlogs");  // Show "ListBlogs" panel
+                cardLayout.show(cardPanel, "ListBlogs");  // Hiển thị panel "ListBlogs"
                 setActiveButton(btnListBlogs);
             }
         });
         navigationPanel.add(btnListBlogs);
 
-        // Add a button for Statistics
+        // Thêm nút cho thống kê
         JButton btnStatistics = new JButton("Statistics");
         styleButton(btnStatistics);
         btnStatistics.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                cardLayout.show(cardPanel, "Statistics");  // Show "Statistics" panel
+                cardLayout.show(cardPanel, "Statistics");  // Hiển thị panel "Statistics"
                 setActiveButton(btnStatistics);
             }
         });
         navigationPanel.add(btnStatistics);
 
-        // Panel to hold the content (ListUsers, ListBlogs, Statistics)
+        // Panel để chứa các nội dung (ListUsers, ListBlogs, Statistics)
         cardPanel = new JPanel();
-        contentPane.add(cardPanel, BorderLayout.CENTER); // Add cardPanel to center of contentPane
+        contentPane.add(cardPanel, BorderLayout.CENTER); // Thêm cardPanel vào phần giữa của contentPane
 
-        // Initialize CardLayout
+        // Khởi tạo CardLayout
         cardLayout = new CardLayout();
         cardPanel.setLayout(cardLayout);
 
-        // Create the ListUsers, ListBlog, and StatisticsBlog panels
-        JPanel listUsersPanel = new ListUsers();  // Assuming ListUsers class is properly defined
-        JPanel listBlogPanel = new ListBlog();  // Assuming ListBlog class is properly defined
-        JPanel statisticsPanel = new StatisticsBlog();  // Assuming StatisticsBlog class is properly defined
+        // Tạo các panel ListUsers, ListBlog, và StatisticsBlog
+        JPanel listUsersPanel = new ListUsers();  // Giả sử ListUsers đã được định nghĩa đúng
+        JPanel listBlogPanel = new ListBlog();  // Giả sử ListBlog đã được định nghĩa đúng
+        JPanel statisticsPanel = new StatisticsBlog();  // Giả sử StatisticsBlog đã được định nghĩa đúng
 
-        // Add panels to the card layout
+        // Thêm các panel vào cardLayout
         cardPanel.add(listUsersPanel, "ListUsers");
         cardPanel.add(listBlogPanel, "ListBlogs");
         cardPanel.add(statisticsPanel, "Statistics");
 
-        // Optionally, set the initial active button to the first one
+        // Đặt nút đầu tiên làm nút đang hoạt động
         setActiveButton(btnListUsers);
     }
 
-    // Method to style buttons with rounded borders and other properties
+    // Phương thức để tạo kiểu cho các nút với đường viền bo tròn và các thuộc tính khác
     private void styleButton(JButton button) {
-        button.setBackground(new Color(56, 142, 60)); // Set background color
-        button.setForeground(Color.WHITE); // Set text color
-        button.setBorder(new LineBorder(new Color(56, 142, 60), 2, true)); // Set border with rounded edges
-        button.setFocusPainted(false); // Remove focus painting
-        button.setFont(button.getFont().deriveFont(14f)); // Set font size
+        button.setBackground(new Color(56, 142, 60)); // Màu nền cho nút
+        button.setForeground(Color.WHITE); // Màu chữ trắng
+        button.setBorder(new LineBorder(new Color(56, 142, 60), 2, true)); // Đường viền với cạnh bo tròn
+        button.setFocusPainted(false); // Loại bỏ hiệu ứng khi nút được chọn
+        button.setFont(button.getFont().deriveFont(14f)); // Cỡ chữ cho nút
     }
 
-    // Set the given button as the active button by applying an active style.
+    // Đặt nút được truyền vào là nút hoạt động bằng cách áp dụng kiểu active
     private void setActiveButton(JButton button) {
         if (currentActiveButton != null) {
-            currentActiveButton.setBackground(new Color(56, 142, 60)); // Reset background for inactive buttons
+            currentActiveButton.setBackground(new Color(56, 142, 60)); // Đặt lại màu nền cho các nút không hoạt động
         }
         currentActiveButton = button;
-        button.setBackground(new Color(80, 170, 70)); // Highlight the active button (darker green)
+        button.setBackground(new Color(80, 170, 70)); // Nút đang hoạt động có màu nền xanh đậm hơn
     }
 }
