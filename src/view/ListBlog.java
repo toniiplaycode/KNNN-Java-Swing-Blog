@@ -37,26 +37,25 @@ public class ListBlog extends JPanel {
 		tableModel = new DefaultTableModel(
 				new Object[] { "ID", "User ID", "Title", "Content", "Image Link", "Created At", "Show Detail" }, 0);
 		table = new JTable(tableModel);
-		
+
 		// Create Search panel above the table (top position)
 		JPanel searchPanel = new JPanel(new BorderLayout());
 		txtSearch = new JTextField();
 		txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 		searchPanel.add(new JLabel("Search: "), BorderLayout.WEST);
 		searchPanel.add(txtSearch, BorderLayout.CENTER);
-		searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));  // Margin
-		add(searchPanel, BorderLayout.NORTH);  // Move the search panel to the top (NORTH)
+		searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10)); // Margin
+		add(searchPanel, BorderLayout.NORTH); // Move the search panel to the top (NORTH)
 
 		// Apply FlatLaf look and feel for JTable
 		table.setRowHeight(30); // Adjust row height for readability
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); // Single row selection
 		table.setFillsViewportHeight(true);
 		table.setBackground(Color.WHITE); // White background for table
-		table.getTableHeader().setBackground(new Color(0x4CAF50)); // Table header background color
-		table.getTableHeader().setForeground(Color.WHITE); // Header text color
+		table.getTableHeader().setBackground(Color.WHITE); // Table header background color
 
 		// Set row selection background color to green
-		table.setSelectionBackground(new Color(0x4CAF50)); // Green when row is selected
+		table.setSelectionBackground(new Color(70, 130, 180)); // Green when row is selected
 		table.setSelectionForeground(Color.WHITE); // White text for selected row
 
 		// Create JScrollPane to wrap the JTable
@@ -70,7 +69,6 @@ public class ListBlog extends JPanel {
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, scrollPane, detailPanel);
 		splitPane.setDividerLocation(600); // Adjust the divider to fit your needs
 		add(splitPane, BorderLayout.CENTER);
-
 
 		// Add DocumentListener to the search input field
 		txtSearch.getDocument().addDocumentListener(new DocumentListener() {
@@ -289,77 +287,111 @@ public class ListBlog extends JPanel {
 	// Method to load blog details into the detail panel when a blog is clicked in
 	// the table
 	private void loadBlogDetails(int id) {
-		try {
-			connection = DBConnection.getConnection();
-			String query = "SELECT p.id, p.title, p.content, p.hash_img, u.username, u.email, u.gender, u.address FROM tbl_post p JOIN tbl_user u ON p.user_id = u.id WHERE p.id = ?";
-			PreparedStatement ps = connection.prepareStatement(query);
-			ps.setInt(1, id);
-			ResultSet rs = ps.executeQuery();
+		// Hiển thị loading dialog
+		JDialog loadingDialog = new JDialog((Frame) null, "Loading", true);
+		JPanel loadingPanel = new JPanel(new BorderLayout());
+		JLabel loadingLabel = new JLabel("Loading...", SwingConstants.CENTER);
+		loadingLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+		loadingPanel.add(loadingLabel, BorderLayout.CENTER);
+		loadingDialog.add(loadingPanel);
+		loadingDialog.setSize(150, 100);
+		loadingDialog.setLocationRelativeTo(this);
 
-			if (rs.next()) {
-				String title = rs.getString("title");
-				String content = rs.getString("content");
-				String imgLink = rs.getString("hash_img");
-				String username = rs.getString("username");
-				String email = rs.getString("email");
-				String gender = rs.getString("gender");
-				String address = rs.getString("address");
+		// Tạo một worker để tải dữ liệu và tránh làm đông cứng UI
+		SwingWorker<Void, Void> worker = new SwingWorker<>() {
+			@Override
+			protected Void doInBackground() throws Exception {
+				try {
+					// Tải dữ liệu từ cơ sở dữ liệu
+					connection = DBConnection.getConnection();
+					String query = "SELECT p.id, p.title, p.content, p.hash_img, u.username, u.email, u.gender, u.address FROM tbl_post p JOIN tbl_user u ON p.user_id = u.id WHERE p.id = ?";
+					PreparedStatement ps = connection.prepareStatement(query);
+					ps.setInt(1, id);
+					ResultSet rs = ps.executeQuery();
 
-				// Clear previous details
-				detailPanel.removeAll();
+					if (rs.next()) {
+						// Lấy dữ liệu chi tiết từ database
+						String title = rs.getString("title");
+						String content = rs.getString("content");
+						String imgLink = rs.getString("hash_img");
+						String username = rs.getString("username");
+						String email = rs.getString("email");
+						String gender = rs.getString("gender");
+						String address = rs.getString("address");
 
-				detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.Y_AXIS));
+						// Cập nhật giao diện detailPanel
+						SwingUtilities.invokeLater(() -> {
+							detailPanel.removeAll();
 
-				JPanel titlePanel = new JPanel();
-				JLabel lblTitle = new JLabel("Title: " + title);
-				lblTitle.setFont(new Font("Arial", Font.BOLD, 14));
-				titlePanel.add(lblTitle);
+							detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.Y_AXIS));
 
-				JPanel userPanel = new JPanel();
-				JLabel lblUser = new JLabel("Author: " + username);
-				lblUser.setFont(new Font("Arial", Font.ITALIC, 12));
-				userPanel.add(lblUser);
+							JPanel titlePanel = new JPanel();
+							JLabel lblTitle = new JLabel("Title: " + title);
+							lblTitle.setFont(new Font("Arial", Font.BOLD, 14));
+							titlePanel.add(lblTitle);
 
-				JLabel lblEmail = new JLabel("Email: " + email);
-				lblEmail.setFont(new Font("Arial", Font.ITALIC, 12));
-				userPanel.add(lblEmail);
+							JPanel userPanel = new JPanel();
+							JLabel lblUser = new JLabel("Author: " + username);
+							lblUser.setFont(new Font("Arial", Font.ITALIC, 12));
+							userPanel.add(lblUser);
 
-				JLabel lblGender = new JLabel("Gender: " + gender);
-				lblGender.setFont(new Font("Arial", Font.ITALIC, 12));
-				userPanel.add(lblGender);
+							JLabel lblEmail = new JLabel("Email: " + email);
+							lblEmail.setFont(new Font("Arial", Font.ITALIC, 12));
+							userPanel.add(lblEmail);
 
-				JLabel lblAddress = new JLabel("Address: " + address);
-				lblAddress.setFont(new Font("Arial", Font.ITALIC, 12));
-				userPanel.add(lblAddress);
+							JLabel lblGender = new JLabel("Gender: " + gender);
+							lblGender.setFont(new Font("Arial", Font.ITALIC, 12));
+							userPanel.add(lblGender);
 
-				JPanel contentPanel = new JPanel();
-				JLabel lblContent = new JLabel("<html>Content: " + content + "</html>");
-				lblContent.setFont(new Font("Arial", Font.PLAIN, 12));
-				contentPanel.add(lblContent);
+							JLabel lblAddress = new JLabel("Address: " + address);
+							lblAddress.setFont(new Font("Arial", Font.ITALIC, 12));
+							userPanel.add(lblAddress);
 
-				detailPanel.add(titlePanel);
-				detailPanel.add(userPanel);
-				detailPanel.add(contentPanel);
+							JPanel contentPanel = new JPanel();
+							JLabel lblContent = new JLabel("<html>Content: " + content + "</html>");
+							lblContent.setFont(new Font("Arial", Font.PLAIN, 12));
+							contentPanel.add(lblContent);
 
-				if (imgLink != null && !imgLink.trim().isEmpty()) {
-					JPanel imagePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+							detailPanel.add(titlePanel);
+							detailPanel.add(userPanel);
+							detailPanel.add(contentPanel);
 
-					ImageIcon imgIcon = new ImageIcon(new URL(imgLink));
-					Image img = imgIcon.getImage();
-					Image scaledImg = img.getScaledInstance(700, 400, Image.SCALE_SMOOTH);
-					imgIcon = new ImageIcon(scaledImg);
-					JLabel imgLabel = new JLabel(imgIcon);
+							if (imgLink != null && !imgLink.trim().isEmpty()) {
+								JPanel imagePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
 
-					imagePanel.add(imgLabel);
+								try {
+									ImageIcon imgIcon = new ImageIcon(new URL(imgLink));
+									Image img = imgIcon.getImage();
+									Image scaledImg = img.getScaledInstance(700, 400, Image.SCALE_SMOOTH);
+									imgIcon = new ImageIcon(scaledImg);
+									JLabel imgLabel = new JLabel(imgIcon);
 
-					detailPanel.add(imagePanel);
+									imagePanel.add(imgLabel);
+									detailPanel.add(imagePanel);
+								} catch (java.net.MalformedURLException e) {
+									e.printStackTrace();
+								}
+							}
+
+							detailPanel.revalidate();
+							detailPanel.repaint();
+						});
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
 				}
-
-				detailPanel.revalidate();
-				detailPanel.repaint();
+				return null;
 			}
-		} catch (SQLException | java.net.MalformedURLException e) {
-			e.printStackTrace();
-		}
+
+			@Override
+			protected void done() {
+				loadingDialog.dispose(); // Đóng loading dialog
+			}
+		};
+
+		// Hiển thị dialog và bắt đầu worker
+		SwingUtilities.invokeLater(() -> loadingDialog.setVisible(true));
+		worker.execute();
 	}
+
 }
