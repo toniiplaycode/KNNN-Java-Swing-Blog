@@ -25,4 +25,11 @@
 			</matcher>
 		</filter>
 	</filteredResources>
+	<dependencies>
+		<dependency>
+			<groupId>com.fifesoft</groupId>
+			<artifactId>rsyntaxtextarea</artifactId>
+			<version>3.3.4</version>
+		</dependency>
+	</dependencies>
 </projectDescription>

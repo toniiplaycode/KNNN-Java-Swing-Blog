@@ -1,138 +1,238 @@
 package view;
 
-import com.formdev.flatlaf.FlatLightLaf; // Import thư viện FlatLaf
 import javax.swing.*;
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.Graphics2D;
-import java.awt.font.FontMetrics;
-import java.net.URL;
+import com.formdev.flatlaf.FlatLightLaf;
 
 public class MainManage extends JFrame {
-
     private static final long serialVersionUID = 1L;
-    private JTabbedPane tabbedPane; // JTabbedPane để chứa các tab
-    private int adminId = 1; // Gán giá trị mặc định là 1
-
-    public MainManage() { // Constructor không cần tham số
-        setTitle("Blog Management System");
+    private int userId;
+    
+    public MainManage(int userId) {
+        this.userId = userId;
+        initRoleSelectionUI();
+    }
+    
+    private void initRoleSelectionUI() {
+        setTitle("Chọn giao diện");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(0, 0, 700, 500); // Kích thước ban đầu, nhưng sẽ được tối đa hóa
-        setExtendedState(JFrame.MAXIMIZED_BOTH); // Tối đa hóa cửa sổ
-
-        // Set layout cho contentPane
-        JPanel contentPane = new JPanel();
-        contentPane.setLayout(new BorderLayout());
-        setContentPane(contentPane);
-
-        // Tạo JTabbedPane
-        tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(new Font("Segoe UI", Font.PLAIN, 14)); // Font của tab
-        contentPane.add(tabbedPane, BorderLayout.CENTER);
-
-        // Tạo các tab với icon
-        try {
-            // Tạo các panel
-            JPanel listUsersPanel = new ListUsers();
-            JPanel listBlogPanel = new ListBlog();
-            JPanel statisticsPanel = new StatisticsBlog();
-            JPanel profilePanel = new ProfileAdmin(adminId);
-            
-            // Tạo panel NewsFeed và đặt trong JPanel để có thể thêm vào tab
-            JPanel newsFeedWrapper = new JPanel(new BorderLayout());
-            NewsFeed newsFeed = new NewsFeed(adminId);
-            // Lấy contentPane của NewsFeed và thêm vào wrapper
-            newsFeedWrapper.add(newsFeed.getContentPane(), BorderLayout.CENTER);
-
-            // Thêm các tab với icon
-            tabbedPane.addTab("News Feed",
-                getIconOrDefault("/icons/news.png", "news"),
-                newsFeedWrapper,
-                "View News Feed"
-            );
-            
-            tabbedPane.addTab("List Users", 
-                getIconOrDefault("/icons/users.png", "users"), 
-                listUsersPanel, 
-                "Manage Users"
-            );
-            
-            tabbedPane.addTab("List Blogs", 
-                getIconOrDefault("/icons/blogs.png", "blogs"), 
-                listBlogPanel, 
-                "Manage Blogs"
-            );
-            
-            tabbedPane.addTab("Statistics", 
-                getIconOrDefault("/icons/statistics.png", "stats"), 
-                statisticsPanel, 
-                "View Statistics"
-            );
-            
-            tabbedPane.addTab("Profile", 
-                getIconOrDefault("/icons/profile.png", "profile"), 
-                profilePanel, 
-                "Admin Profile"
-            );
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this,
-                "Error loading icons: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-        }
+        setSize(1000, 600);
+        setLocationRelativeTo(null);
+        
+        // Main container với padding
+        JPanel container = new JPanel(new BorderLayout(0, 30));
+        container.setBackground(Color.WHITE);
+        container.setBorder(BorderFactory.createEmptyBorder(40, 60, 40, 60));
+        
+        // Header
+        JLabel headerLabel = new JLabel("Chọn giao diện bạn muốn sử dụng", SwingConstants.CENTER);
+        headerLabel.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        
+        // Panel chứa các options với spacing
+        JPanel optionsPanel = new JPanel(new GridLayout(1, 2, 40, 0));
+        optionsPanel.setBackground(Color.WHITE);
+        
+        // Panel cho option Người đọc
+        JPanel readerPanel = createOptionPanel(
+            "Người đọc",
+            "Đọc và tương tác với bài viết, bình luận",
+            "/icons/news.png",
+            new Color(52, 152, 219),
+            e -> initReaderUI()
+        );
+        
+        // Panel cho option Quản lý
+        JPanel managerPanel = createOptionPanel(
+            "Quản lý",
+            "Quản lý bài viết, người dùng và xem thống kê",
+            "/icons/manage.png",
+            new Color(46, 204, 113),
+            e -> initManagerUI()
+        );
+        
+        optionsPanel.add(readerPanel);
+        optionsPanel.add(managerPanel);
+        
+        container.add(headerLabel, BorderLayout.NORTH);
+        container.add(optionsPanel, BorderLayout.CENTER);
+        
+        setContentPane(container);
+        setVisible(true);
     }
-
-    private ImageIcon getIconOrDefault(String path, String fallbackText) {
+    
+    private JPanel createOptionPanel(String title, String description, String iconPath, 
+            Color color, java.awt.event.ActionListener action) {
+        
+        JPanel panel = new JPanel(new BorderLayout(0, 20));
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(230, 230, 230), 1),
+            BorderFactory.createEmptyBorder(30, 30, 30, 30)
+        ));
+        
+        // Content panel
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBackground(Color.WHITE);
+        
+        // Icon
+        JLabel iconLabel = new JLabel();
         try {
-            URL iconUrl = getClass().getResource(path);
-            if (iconUrl != null) {
-                return new ImageIcon(new ImageIcon(iconUrl)
-                    .getImage()
-                    .getScaledInstance(20, 20, Image.SCALE_SMOOTH));
+            ImageIcon icon = new ImageIcon(getClass().getResource(iconPath));
+            Image img = icon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+            iconLabel.setIcon(new ImageIcon(img));
+        } catch (Exception e) {
+            iconLabel.setText(title.substring(0, 1));
+            iconLabel.setFont(new Font("Segoe UI", Font.BOLD, 48));
+            iconLabel.setForeground(color);
+        }
+        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        // Title
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        // Description
+        JLabel descLabel = new JLabel("<html><div style='text-align: center; width: 250px; margin: 0 auto; display: block;'>" + 
+            description + "</div></html>");
+        descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        descLabel.setForeground(new Color(100, 100, 100));
+        descLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        descLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        // Wrap description in a panel for better centering
+        JPanel descPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        descPanel.setBackground(Color.WHITE);
+        descPanel.add(descLabel);
+        
+        contentPanel.add(iconLabel);
+        contentPanel.add(Box.createVerticalStrut(20));
+        contentPanel.add(titleLabel);
+        contentPanel.add(Box.createVerticalStrut(10));
+        contentPanel.add(descPanel);
+        
+        // Button
+        JButton button = new JButton("Chọn");
+        button.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        button.setForeground(Color.WHITE);
+        button.setBackground(color);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setPreferredSize(new Dimension(150, 45));
+        
+        // Hover effects
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(color.darker());
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        // Trả về một icon mặc định nếu không tìm thấy file
-        return createDefaultIcon(fallbackText);
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(color);
+            }
+        });
+        
+        button.addActionListener(e -> {
+            dispose();
+            action.actionPerformed(e);
+        });
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.setBackground(Color.WHITE);
+        buttonPanel.add(button);
+        
+        panel.add(contentPanel, BorderLayout.CENTER);
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+        
+        // Panel hover effect
+        panel.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                panel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(color, 2),
+                    BorderFactory.createEmptyBorder(29, 29, 29, 29)
+                ));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                panel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(new Color(230, 230, 230), 1),
+                    BorderFactory.createEmptyBorder(30, 30, 30, 30)
+                ));
+            }
+        });
+        
+        return panel;
     }
-
-    private ImageIcon createDefaultIcon(String text) {
-        // Tạo một icon mặc định với chữ
-        BufferedImage image = new BufferedImage(20, 20, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = image.createGraphics();
-        g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2d.setColor(new Color(52, 152, 219));
-        g2d.fillOval(0, 0, 19, 19);
-        g2d.setColor(Color.WHITE);
-        g2d.setFont(new Font("Arial", Font.BOLD, 10));
-        FontMetrics fm = g2d.getFontMetrics();
-        String iconText = text.substring(0, 1).toUpperCase();
-        g2d.drawString(iconText, 
-            10 - fm.stringWidth(iconText)/2, 
-            10 + fm.getAscent()/2 - 1);
-        g2d.dispose();
-        return new ImageIcon(image);
+    
+    public void initReaderUI() {
+        // Tạo frame mới cho NewsFeed
+        JFrame newsFeedFrame = new JFrame("News Feed");
+        newsFeedFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        newsFeedFrame.setBounds(100, 100, 1200, 700);
+        newsFeedFrame.setLocationRelativeTo(null);
+        
+        // Tạo và thêm NewsFeed vào frame mới
+        NewsFeed newsFeed = new NewsFeed(userId);
+        newsFeedFrame.setContentPane(newsFeed.getContentPane());
+        
+        // Hiển thị frame mới
+        newsFeedFrame.setVisible(true);
+        
+        // Đóng frame chọn role
+        dispose();
+    }
+    
+    public void initManagerUI() {
+        // Tạo frame mới cho giao diện quản lý
+        JFrame managerFrame = new JFrame("Quản lý");
+        managerFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        managerFrame.setBounds(100, 100, 1200, 700);
+        managerFrame.setLocationRelativeTo(null);
+        
+        // Tạo panel chứa header và tabbed pane
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        
+        // Header panel với nút chuyển đổi
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        JButton btnSwitchToReader = new JButton("Chuyển sang người đọc");
+        btnSwitchToReader.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        btnSwitchToReader.setForeground(Color.WHITE);
+        btnSwitchToReader.setBackground(new Color(52, 152, 219));
+        btnSwitchToReader.setBorderPainted(false);
+        btnSwitchToReader.setFocusPainted(false);
+        btnSwitchToReader.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSwitchToReader.addActionListener(e -> {
+            managerFrame.dispose();
+            initReaderUI();
+        });
+        
+        headerPanel.add(btnSwitchToReader);
+        
+        // Tạo tabbed pane
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.addTab("Quản lý bài viết", new ListBlog());
+        tabbedPane.addTab("Quản lý người dùng", new ListUsers());
+        tabbedPane.addTab("Thống kê", new StatisticsBlog());
+        tabbedPane.addTab("Thông tin cá nhân", new ProfileAdmin(userId));
+        
+        mainPanel.add(headerPanel, BorderLayout.NORTH);
+        mainPanel.add(tabbedPane, BorderLayout.CENTER);
+        
+        managerFrame.add(mainPanel);
+        managerFrame.setVisible(true);
     }
 
     public static void main(String[] args) {
-        // Thiết lập FlatLaf Look and Feel
         try {
-            UIManager.setLookAndFeel(new FlatLightLaf()); // Áp dụng FlatLaf Light
+            UIManager.setLookAndFeel(new FlatLightLaf());
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        EventQueue.invokeLater(() -> {
-            try {
-                // Tạo và hiển thị MainManage trực tiếp
-                MainManage frame = new MainManage();
-                frame.setVisible(true);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        SwingUtilities.invokeLater(() -> {
+            // Giả sử userId = 1 cho test
+            new MainManage(1);
         });
     }
 }

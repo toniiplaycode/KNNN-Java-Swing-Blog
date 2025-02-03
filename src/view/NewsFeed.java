@@ -88,17 +88,35 @@ public class NewsFeed extends JFrame {
         userPanel.add(lblWelcome);
         
         // Action buttons panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         
-        JButton btnNewPost = new JButton("New Post");
+        // Nút New Post
+        JButton btnNewPost = new JButton("Bài viết mới");
         styleButton(btnNewPost, new Color(52, 152, 219));
         btnNewPost.addActionListener(e -> createNewPost());
         
-        JButton btnLogout = new JButton("Logout");
+        // Nút chuyển sang Manager
+        JButton btnSwitchToManager = new JButton("Chuyển sang quản lý");
+        styleButton(btnSwitchToManager, new Color(46, 204, 113));
+        btnSwitchToManager.addActionListener(e -> {
+            // Tìm frame cha và đóng nó
+            JFrame currentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+            if (currentFrame != null) {
+                currentFrame.dispose();
+            }
+            // Mở giao diện quản lý
+            MainManage manager = new MainManage(userId);
+            manager.initManagerUI();
+        });
+        
+        // Nút Logout
+        JButton btnLogout = new JButton("Đăng xuất");
         styleButton(btnLogout, new Color(231, 76, 60));
         btnLogout.addActionListener(e -> logout());
         
+        // Thêm các nút vào panel
         buttonPanel.add(btnNewPost);
+        buttonPanel.add(btnSwitchToManager);
         buttonPanel.add(btnLogout);
         
         panel.add(userPanel, BorderLayout.WEST);
@@ -214,9 +232,20 @@ public class NewsFeed extends JFrame {
         
         headerPanel.add(userInfoPanel, BorderLayout.WEST);
         
-        // Title
+        // Thêm title vào panel riêng và đặt dưới header
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setOpaque(false);
+        titlePanel.setBorder(new EmptyBorder(10, 0, 5, 0)); // Padding trên dưới
+        
         JLabel lblTitle = new JLabel(title);
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18)); // Tăng font size
+        titlePanel.add(lblTitle, BorderLayout.CENTER);
+        
+        // Panel chứa cả header và title
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.setOpaque(false);
+        topPanel.add(headerPanel, BorderLayout.NORTH);
+        topPanel.add(titlePanel, BorderLayout.CENTER);
         
         // Content Panel
         JPanel contentPanel = new JPanel();
@@ -273,11 +302,36 @@ public class NewsFeed extends JFrame {
         textPane.setEditable(false);
         textPane.setBackground(null);
         textPane.setBorder(null);
-        
-        // Giới hạn chiều cao của content
-        int maxHeight = 300;
-        textPane.setPreferredSize(new Dimension(0, Math.min(textPane.getPreferredSize().height, maxHeight)));
-        
+
+        // Cho phép textPane tự động điều chỉnh kích thước theo nội dung
+        textPane.setPreferredSize(new Dimension(0, textPane.getPreferredSize().height));
+
+        // Thêm sự kiện để tự động điều chỉnh kích thước khi nội dung thay đổi
+        HTMLDocument doc = (HTMLDocument) textPane.getDocument();
+        doc.addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateSize();
+            }
+            
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateSize();
+            }
+            
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateSize();
+            }
+            
+            private void updateSize() {
+                SwingUtilities.invokeLater(() -> {
+                    textPane.setPreferredSize(new Dimension(0, textPane.getPreferredSize().height));
+                    textPane.revalidate();
+                });
+            }
+        });
+
         contentPanel.add(textPane);
         
         // Actions panel
@@ -291,7 +345,7 @@ public class NewsFeed extends JFrame {
         likePanel.setOpaque(false);
         
         JButton btnLike = createActionButton(
-            userLiked ? "Unlike" : "Like",
+            userLiked ? "Bỏ thích" : "Thích",
             userLiked ? new Color(231, 76, 60) : new Color(52, 152, 219)
         );
         btnLike.setIcon(likeIcon);
@@ -306,7 +360,7 @@ public class NewsFeed extends JFrame {
         btnLike.addActionListener(e -> {
             try {
                 connection = DBConnection.getConnection();
-                boolean isLiked = btnLike.getText().equals("Unlike");
+                boolean isLiked = btnLike.getText().equals("Bỏ thích");
                 
                 if (isLiked) {
                     // Unlike
@@ -317,7 +371,7 @@ public class NewsFeed extends JFrame {
                     ps.executeUpdate();
                     
                     // Update UI
-                    btnLike.setText("Like");
+                    btnLike.setText("Thích");
                     btnLike.setForeground(new Color(52, 152, 219));
                     lblLikeCount.setText(String.valueOf(Integer.parseInt(lblLikeCount.getText()) - 1));
                     
@@ -330,7 +384,7 @@ public class NewsFeed extends JFrame {
                     ps.executeUpdate();
                     
                     // Update UI
-                    btnLike.setText("Unlike");
+                    btnLike.setText("Bỏ thích");
                     btnLike.setForeground(new Color(231, 76, 60));
                     lblLikeCount.setText(String.valueOf(Integer.parseInt(lblLikeCount.getText()) + 1));
                 }
@@ -352,7 +406,7 @@ public class NewsFeed extends JFrame {
         commentsPanel.setOpaque(false);
         
         // Button để hiển thị comments dialog
-        JButton btnShowComments = new JButton(commentCount + " comments");
+        JButton btnShowComments = new JButton(commentCount + " bình luận");
         btnShowComments.setIcon(commentIcon);
         btnShowComments.setBorderPainted(false);
         btnShowComments.setContentAreaFilled(false);
@@ -367,7 +421,7 @@ public class NewsFeed extends JFrame {
         actionsPanel.add(btnShowComments);
         
         // Add all components
-        panel.add(headerPanel, BorderLayout.NORTH);
+        panel.add(topPanel, BorderLayout.NORTH);
         panel.add(contentPanel, BorderLayout.CENTER);
         panel.add(actionsPanel, BorderLayout.SOUTH);
         
@@ -419,17 +473,21 @@ public class NewsFeed extends JFrame {
     }
     
     private void createNewPost() {
-        // TODO: Implement create new post dialog
-        JOptionPane.showMessageDialog(this,
-            "Create new post feature coming soon!",
-            "Information",
-            JOptionPane.INFORMATION_MESSAGE);
+        AddPostDialog dialog = new AddPostDialog(
+            (JFrame) SwingUtilities.getWindowAncestor(this),
+            userId,
+            () -> {
+                loadPosts(); // Refresh posts
+                scrollToTop(); // Scroll lên trên sau khi refresh
+            }
+        );
+        dialog.setVisible(true);
     }
     
     private void logout() {
         int choice = JOptionPane.showConfirmDialog(this,
-            "Are you sure you want to logout?",
-            "Confirm Logout",
+            "Bạn có chắc muốn đăng xuất?",
+            "Xác nhận đăng xuất",
             JOptionPane.YES_NO_OPTION);
             
         if (choice == JOptionPane.YES_OPTION) {
@@ -448,7 +506,9 @@ public class NewsFeed extends JFrame {
         button.setFocusPainted(false);
         button.setBorderPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        button.setPreferredSize(new Dimension(100, 30));
+        
+        // Thêm padding cho nút thay vì set kích thước cố định
+        button.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         
         button.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
@@ -680,5 +740,33 @@ public class NewsFeed extends JFrame {
         // Fallback to default avatar if URL is invalid or empty
         avatarLabel.setIcon(createCircularAvatar(username.substring(0, 1).toUpperCase()));
         return avatarLabel;
+    }
+    
+    // Thêm phương thức scrollToTop
+    private void scrollToTop() {
+        SwingUtilities.invokeLater(() -> {
+            JScrollBar verticalBar = scrollPane.getVerticalScrollBar();
+            // Scroll với animation
+            new Thread(() -> {
+                int currentPosition = verticalBar.getValue();
+                int steps = 50;
+                int delay = 5;
+                int stepSize = currentPosition / steps;
+                
+                for (int i = 0; i < steps; i++) {
+                    try {
+                        Thread.sleep(delay);
+                        final int step = i;
+                        SwingUtilities.invokeLater(() -> {
+                            int newValue = currentPosition - (stepSize * (step + 1));
+                            verticalBar.setValue(Math.max(0, newValue));
+                        });
+                    } catch (InterruptedException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+                SwingUtilities.invokeLater(() -> verticalBar.setValue(0));
+            }).start();
+        });
     }
 } 
