@@ -2,12 +2,14 @@ package view;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.*;
 import java.net.URL;
 import java.sql.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.border.EmptyBorder;
 import utils.DBConnection;
 
 public class ListUsers extends JPanel {
@@ -19,169 +21,51 @@ public class ListUsers extends JPanel {
 	private JRadioButton rbtnMale, rbtnFemale;
 	private ButtonGroup genderGroup;
 	private JButton btnAdd, btnUpdate, btnDelete, btnClear;
-
+	private DefaultTableModel tableModel;
 	private Connection connection;
 
 	public ListUsers() {
 		setLayout(new BorderLayout());
 
-		// Create search field
+		// Initialize table model
+		tableModel = new DefaultTableModel(
+			new Object[]{"ID", "Username", "Email", "Gender", "Address", "Avatar", "Actions"}, 0) {
+			@Override
+			public boolean isCellEditable(int row, int column) {
+				return column == 6; // Chỉ cho phép edit cột "Actions"
+			}
+		};
+		table = new JTable(tableModel);
+
+		// Create search panel
 		JPanel searchPanel = new JPanel(new BorderLayout());
 		txtSearch = new JTextField();
 		txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-		searchPanel.add(new JLabel("Search "), BorderLayout.WEST);
+		searchPanel.add(new JLabel("Search: "), BorderLayout.WEST);
 		searchPanel.add(txtSearch, BorderLayout.CENTER);
 		searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 		add(searchPanel, BorderLayout.NORTH);
 
-		// Initialize table
-		table = new JTable();
-		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-
-		// Styling for the table
+		// Style the table
+		table.setRowHeight(30);
+		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		table.setFillsViewportHeight(true);
+		table.setBackground(Color.WHITE);
+		table.getTableHeader().setBackground(Color.WHITE);
 		table.setSelectionBackground(new Color(70, 130, 180));
 		table.setSelectionForeground(Color.WHITE);
-		table.setRowHeight(30);
-		table.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
+		// Create scroll pane for table
 		JScrollPane scrollPane = new JScrollPane(table);
-		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		add(scrollPane, BorderLayout.CENTER);
 
-		// Create input panel for user data
-		// Create input panel for user data
-		JPanel inputPanel = new JPanel(new GridBagLayout());
-		add(inputPanel, BorderLayout.SOUTH);
+		// Setup input panel
+		setupInputPanel();
 
-		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.insets = new Insets(5, 5, 5, 5); // Padding
-		gbc.fill = GridBagConstraints.HORIZONTAL;
+		// Configure Edit button column
+		configureEditButtonColumn();
 
-		// Add Username Label and TextField
-		gbc.gridx = 0; // Column 0
-		gbc.gridy = 0; // Row 0
-		gbc.weightx = 0.2; // 20% of width
-		inputPanel.add(new JLabel("Username:"), gbc);
-
-		gbc.gridx = 1; // Column 1
-		gbc.weightx = 0.8; // 80% of width
-		txtUsername = new JTextField();
-		inputPanel.add(txtUsername, gbc);
-
-		// Add Email Label and TextField
-		gbc.gridx = 0; 
-		gbc.gridy = 1;
-		gbc.weightx = 0.2;
-		inputPanel.add(new JLabel("Email:"), gbc);
-
-		gbc.gridx = 1; 
-		gbc.weightx = 0.8;
-		txtEmail = new JTextField();
-		inputPanel.add(txtEmail, gbc);
-
-		// Add Password Label and TextField
-		gbc.gridx = 0; 
-		gbc.gridy = 2;
-		gbc.weightx = 0.2;
-		inputPanel.add(new JLabel("Password:"), gbc);
-
-		gbc.gridx = 1; 
-		gbc.weightx = 0.8;
-		txtPassword = new JPasswordField();
-		inputPanel.add(txtPassword, gbc);
-
-		// Add Address Label and TextField
-		gbc.gridx = 0; 
-		gbc.gridy = 3;
-		gbc.weightx = 0.2;
-		inputPanel.add(new JLabel("Address:"), gbc);
-
-		gbc.gridx = 1; 
-		gbc.weightx = 0.8;
-		txtAddress = new JTextField();
-		inputPanel.add(txtAddress, gbc);
-
-		// Add Avatar Link Label and TextField
-		gbc.gridx = 0; 
-		gbc.gridy = 4;
-		gbc.weightx = 0.2;
-		inputPanel.add(new JLabel("Avatar Link:"), gbc);
-
-		gbc.gridx = 1; 
-		gbc.weightx = 0.8;
-		txtAvatar = new JTextField();
-		inputPanel.add(txtAvatar, gbc);
-
-		// Add Gender Label and Radio Buttons
-		gbc.gridx = 0; 
-		gbc.gridy = 5;
-		gbc.weightx = 0.2;
-		inputPanel.add(new JLabel("Gender:"), gbc);
-
-		gbc.gridx = 1; 
-		gbc.weightx = 0.8;
-		JPanel genderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		rbtnMale = new JRadioButton("Male");
-		rbtnFemale = new JRadioButton("Female");
-		genderGroup = new ButtonGroup();
-		genderGroup.add(rbtnMale);
-		genderGroup.add(rbtnFemale);
-		genderPanel.add(rbtnMale);
-		genderPanel.add(rbtnFemale);
-		inputPanel.add(genderPanel, gbc);
-
-		JPanel buttonPanel = new JPanel(new FlowLayout());
-		inputPanel.add(buttonPanel);
-
-		btnAdd = new JButton("Add");
-		btnUpdate = new JButton("Update");
-		btnDelete = new JButton("Delete");
-		btnClear = new JButton("Clear");
-
-		buttonPanel.add(btnAdd);
-		buttonPanel.add(btnUpdate);
-		buttonPanel.add(btnDelete);
-		buttonPanel.add(btnClear);
-		
-		btnAdd.setBackground(new Color(60, 179, 113)); // Green background
-		btnAdd.setForeground(Color.WHITE);            // White text
-
-		btnUpdate.setBackground(new Color(30, 144, 255)); // Blue background
-		btnUpdate.setForeground(Color.WHITE);
-
-		btnDelete.setBackground(new Color(220, 20, 60)); // Red background
-		btnDelete.setForeground(Color.WHITE);
-
-		btnClear.setBackground(new Color(255, 165, 0));  // Orange background
-		btnClear.setForeground(Color.WHITE);
-
-
-		// Add action listeners for buttons
-		btnAdd.addActionListener(e -> addUser());
-		btnUpdate.addActionListener(e -> updateUser());
-		btnDelete.addActionListener(e -> deleteUser());
-		btnClear.addActionListener(e -> clearFields());
-
-		// Set button visibility based on table selection
-		btnUpdate.setVisible(false);
-		btnDelete.setVisible(false);
-		btnClear.setVisible(false);
-
-		table.getSelectionModel().addListSelectionListener(e -> {
-			boolean rowSelected = table.getSelectedRow() != -1;
-			btnAdd.setVisible(!rowSelected);
-			btnClear.setVisible(!rowSelected); // Nút Clear chỉ hiển thị cùng nút Add
-			btnUpdate.setVisible(rowSelected);
-			btnDelete.setVisible(rowSelected);
-		});
-
-		// Initialize DB connection and load users
-		connectToDB();
-		loadUsers("");
-
-		// Add DocumentListener to search field
+		// Add search functionality
 		txtSearch.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
 			public void insertUpdate(DocumentEvent e) {
@@ -199,78 +83,275 @@ public class ListUsers extends JPanel {
 			}
 		});
 
-		// Add MouseListener to table
+		// Add table row selection listener
 		table.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				int selectedRow = table.getSelectedRow();
-				if (selectedRow != -1) {
-					txtUsername.setText(table.getValueAt(selectedRow, 1).toString());
-					txtAvatar.setText(
-							table.getValueAt(selectedRow, 2) != null ? table.getValueAt(selectedRow, 2).toString()
-									: "");
-					txtEmail.setText(table.getValueAt(selectedRow, 3).toString());
-					txtAddress.setText(table.getValueAt(selectedRow, 5).toString());
-
-					String gender = table.getValueAt(selectedRow, 4).toString();
-					if (gender.equalsIgnoreCase("Male")) {
-						rbtnMale.setSelected(true);
-					} else {
-						rbtnFemale.setSelected(true);
-					}
+				int column = table.getColumnModel().getColumnIndexAtX(e.getX());
+				int row = e.getY() / table.getRowHeight();
+				
+				if (row < table.getRowCount() && row >= 0 && column == 6) {
+					// Click vào nút Edit
+					int id = (int) tableModel.getValueAt(row, 0);
+					loadUserForEdit(id);
+				} else if (row < table.getRowCount() && row >= 0) {
+					// Click vào các cột khác để xem chi tiết
+					int id = (int) tableModel.getValueAt(row, 0);
+					showUserDetailDialog(id);
 				}
 			}
 		});
+
+		// Add button listeners
+		btnAdd.addActionListener(e -> addUser());
+		btnUpdate.addActionListener(e -> updateUser());
+		btnDelete.addActionListener(e -> deleteUser());
+		btnClear.addActionListener(e -> clearFields());
+
+		// Load initial data
+		loadUsers("");
 	}
 
-	private void connectToDB() {
-		try {
-			connection = DBConnection.getConnection();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
+	private void setupInputPanel() {
+		JPanel inputPanel = new JPanel(new BorderLayout(10, 10));
+		inputPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+		
+		// Fields panel
+		JPanel fieldsPanel = new JPanel(new GridLayout(6, 2, 10, 10));
+		
+		// Username
+		JLabel lblUsername = new JLabel("Username:");
+		lblUsername.setFont(new Font("Segoe UI", Font.BOLD, 12));
+		txtUsername = new JTextField();
+		txtUsername.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		fieldsPanel.add(lblUsername);
+		fieldsPanel.add(txtUsername);
+		
+		// Email
+		JLabel lblEmail = new JLabel("Email:");
+		lblEmail.setFont(new Font("Segoe UI", Font.BOLD, 12));
+		txtEmail = new JTextField();
+		txtEmail.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		fieldsPanel.add(lblEmail);
+		fieldsPanel.add(txtEmail);
+		
+		// Password
+		JLabel lblPassword = new JLabel("Password:");
+		lblPassword.setFont(new Font("Segoe UI", Font.BOLD, 12));
+		txtPassword = new JPasswordField();
+		txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		fieldsPanel.add(lblPassword);
+		fieldsPanel.add(txtPassword);
+		
+		// Address
+		JLabel lblAddress = new JLabel("Address:");
+		lblAddress.setFont(new Font("Segoe UI", Font.BOLD, 12));
+		txtAddress = new JTextField();
+		txtAddress.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		fieldsPanel.add(lblAddress);
+		fieldsPanel.add(txtAddress);
+		
+		// Avatar
+		JLabel lblAvatar = new JLabel("Avatar Link:");
+		lblAvatar.setFont(new Font("Segoe UI", Font.BOLD, 12));
+		txtAvatar = new JTextField();
+		txtAvatar.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		fieldsPanel.add(lblAvatar);
+		fieldsPanel.add(txtAvatar);
+		
+		// Gender
+		JLabel lblGender = new JLabel("Gender:");
+		lblGender.setFont(new Font("Segoe UI", Font.BOLD, 12));
+		JPanel genderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		rbtnMale = new JRadioButton("Male");
+		rbtnFemale = new JRadioButton("Female");
+		genderGroup = new ButtonGroup();
+		genderGroup.add(rbtnMale);
+		genderGroup.add(rbtnFemale);
+		genderPanel.add(rbtnMale);
+		genderPanel.add(rbtnFemale);
+		fieldsPanel.add(lblGender);
+		fieldsPanel.add(genderPanel);
+		
+		inputPanel.add(fieldsPanel, BorderLayout.CENTER);
+		
+		// Button panel
+		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+		
+		btnAdd = createStyledButton("Add", new Color(46, 204, 113));
+		btnUpdate = createStyledButton("Update", new Color(52, 152, 219));
+		btnDelete = createStyledButton("Delete", new Color(231, 76, 60));
+		btnClear = createStyledButton("Clear", new Color(149, 165, 166));
+		
+		buttonPanel.add(btnAdd);
+		buttonPanel.add(btnUpdate);
+		buttonPanel.add(btnDelete);
+		buttonPanel.add(btnClear);
+		
+		inputPanel.add(buttonPanel, BorderLayout.SOUTH);
+		
+		add(inputPanel, BorderLayout.SOUTH);
+	}
+
+	private JButton createStyledButton(String text, Color bgColor) {
+		JButton button = new JButton(text);
+		button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+		button.setForeground(Color.WHITE);
+		button.setBackground(bgColor);
+		button.setFocusPainted(false);
+		button.setBorderPainted(false);
+		button.setPreferredSize(new Dimension(100, 35));
+		
+		button.addMouseListener(new MouseAdapter() {
+			public void mouseEntered(MouseEvent e) {
+				button.setBackground(bgColor.darker());
+			}
+			public void mouseExited(MouseEvent e) {
+				button.setBackground(bgColor);
+			}
+		});
+		
+		return button;
+	}
+
+	private void configureEditButtonColumn() {
+		// Set preferred width for all columns
+		table.getColumnModel().getColumn(0).setPreferredWidth(50);  // ID
+		table.getColumnModel().getColumn(1).setPreferredWidth(150); // Username
+		table.getColumnModel().getColumn(2).setPreferredWidth(200); // Email
+		table.getColumnModel().getColumn(3).setPreferredWidth(80);  // Gender
+		table.getColumnModel().getColumn(4).setPreferredWidth(150); // Address
+		table.getColumnModel().getColumn(5).setPreferredWidth(200); // Avatar
+		table.getColumnModel().getColumn(6).setPreferredWidth(140); // Actions
+
+		// Configure the Actions column
+		table.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
+			@Override
+			public Component getTableCellRendererComponent(JTable table, Object value,
+					boolean isSelected, boolean hasFocus, int row, int column) {
+				JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 2));
+				panel.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+				
+				// Create Edit button
+				JButton editBtn = new JButton("Edit");
+				editBtn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+				editBtn.setBackground(new Color(52, 152, 219));
+				editBtn.setForeground(Color.WHITE);
+				editBtn.setPreferredSize(new Dimension(55, 24));
+				editBtn.setBorderPainted(false);
+				editBtn.setFocusPainted(false);
+				
+				// Create Detail button
+				JButton detailBtn = new JButton("Detail");
+				detailBtn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+				detailBtn.setBackground(new Color(46, 204, 113));
+				detailBtn.setForeground(Color.WHITE);
+				detailBtn.setPreferredSize(new Dimension(55, 24));
+				detailBtn.setBorderPainted(false);
+				detailBtn.setFocusPainted(false);
+				
+				panel.add(editBtn);
+				panel.add(detailBtn);
+				
+				return panel;
+			}
+		});
+		
+		// Add cell editor for the actions column
+		table.getColumnModel().getColumn(6).setCellEditor(new DefaultCellEditor(new JCheckBox()) {
+			private JPanel panel;
+			private JButton editBtn;
+			private JButton detailBtn;
+			
+			{
+				panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 2));
+				
+				editBtn = new JButton("Edit");
+				editBtn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+				editBtn.setBackground(new Color(52, 152, 219));
+				editBtn.setForeground(Color.WHITE);
+				editBtn.setPreferredSize(new Dimension(55, 24));
+				editBtn.setBorderPainted(false);
+				editBtn.setFocusPainted(false);
+				
+				detailBtn = new JButton("Detail");
+				detailBtn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+				detailBtn.setBackground(new Color(46, 204, 113));
+				detailBtn.setForeground(Color.WHITE);
+				detailBtn.setPreferredSize(new Dimension(55, 24));
+				detailBtn.setBorderPainted(false);
+				detailBtn.setFocusPainted(false);
+				
+				panel.add(editBtn);
+				panel.add(detailBtn);
+				
+				editBtn.addActionListener(e -> {
+					int row = table.getSelectedRow();
+					if (row != -1) {
+						int id = (int) tableModel.getValueAt(row, 0);
+						loadUserForEdit(id);
+					}
+					fireEditingStopped();
+				});
+				
+				detailBtn.addActionListener(e -> {
+					int row = table.getSelectedRow();
+					if (row != -1) {
+						int id = (int) tableModel.getValueAt(row, 0);
+						showUserDetailDialog(id);
+					}
+					fireEditingStopped();
+				});
+			}
+			
+			@Override
+			public Component getTableCellEditorComponent(JTable table, Object value,
+					boolean isSelected, int row, int column) {
+				panel.setBackground(table.getSelectionBackground());
+				return panel;
+			}
+			
+			@Override
+			public Object getCellEditorValue() {
+				return "Actions";
+			}
+		});
+
+		// Enable auto resize mode
+		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 	}
 
 	private void loadUsers(String searchQuery) {
 		try {
+			connection = DBConnection.getConnection();
 			String sql = "SELECT * FROM tbl_user WHERE username LIKE ? OR email LIKE ? OR address LIKE ?";
-			PreparedStatement statement = connection.prepareStatement(sql);
+			PreparedStatement ps = connection.prepareStatement(sql);
 			String searchPattern = "%" + searchQuery + "%";
-			statement.setString(1, searchPattern);
-			statement.setString(2, searchPattern);
-			statement.setString(3, searchPattern);
+			ps.setString(1, searchPattern);
+			ps.setString(2, searchPattern);
+			ps.setString(3, searchPattern);
+			ResultSet rs = ps.executeQuery();
 
-			ResultSet resultSet = statement.executeQuery();
+			tableModel.setRowCount(0);
 
-			DefaultTableModel model = new DefaultTableModel() {
-				@Override
-				public boolean isCellEditable(int row, int column) {
-					return column == 6; // Chỉ cho phép chỉnh sửa cột "Detail"
-				}
-			};
-
-			model.addColumn("ID");
-			model.addColumn("Username");
-			model.addColumn("Avatar Link");
-			model.addColumn("Email");
-			model.addColumn("Gender");
-			model.addColumn("Address");
-			model.addColumn("Detail");
-
-			while (resultSet.next()) {
-				String avatar = resultSet.getString("avatar");
-				model.addRow(new Object[] { resultSet.getInt("id"), resultSet.getString("username"),
-						avatar != null ? avatar : "empty", // Kiểm tra null và thay bằng "empty"
-						resultSet.getString("email"), resultSet.getString("gender"), resultSet.getString("address"),
-						"Detail" });
+			while (rs.next()) {
+				Object[] row = {
+					rs.getInt("id"),
+					rs.getString("username"),
+					rs.getString("email"),
+					rs.getString("gender"),
+					rs.getString("address"),
+					rs.getString("avatar"),
+					"Edit"
+				};
+				tableModel.addRow(row);
 			}
-
-			table.setModel(model);
-			table.getColumn("Detail").setCellRenderer(new ButtonRenderer());
-			table.getColumn("Detail").setCellEditor(new ButtonEditor(new JCheckBox()));
-
 		} catch (SQLException e) {
 			e.printStackTrace();
+			JOptionPane.showMessageDialog(this,
+				"Error loading users: " + e.getMessage(),
+				"Database Error",
+				JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
@@ -278,106 +359,327 @@ public class ListUsers extends JPanel {
 		loadUsers(query);
 	}
 
-	private void addUser() {
+	private void loadUserForEdit(int id) {
 		try {
-			String username = txtUsername.getText();
-			String email = txtEmail.getText();
-			String password = new String(txtPassword.getPassword());
-			String gender = rbtnMale.isSelected() ? "Male" : "Female";
-			String address = txtAddress.getText();
-			String avatar = txtAvatar.getText();
+			connection = DBConnection.getConnection();
+			String query = "SELECT * FROM tbl_user WHERE id = ?";
+			PreparedStatement ps = connection.prepareStatement(query);
+			ps.setInt(1, id);
+			ResultSet rs = ps.executeQuery();
 
-			String sql = "INSERT INTO tbl_user (username, email, password, gender, address, avatar) VALUES (?, ?, ?, ?, ?, ?)";
-			PreparedStatement statement = connection.prepareStatement(sql);
-			statement.setString(1, username);
-			statement.setString(2, email);
-			statement.setString(3, password);
-			statement.setString(4, gender);
-			statement.setString(5, address);
-			statement.setString(6, avatar.isEmpty() ? null : avatar);
-
-			int rowsAffected = statement.executeUpdate();
-			if (rowsAffected > 0) {
-				JOptionPane.showMessageDialog(this, "User added successfully!");
-				loadUsers("");
-				clearFields();
-			} else {
-				JOptionPane.showMessageDialog(this, "Error adding user.");
+			if (rs.next()) {
+				txtUsername.setText(rs.getString("username"));
+				txtEmail.setText(rs.getString("email"));
+				txtAddress.setText(rs.getString("address"));
+				txtAvatar.setText(rs.getString("avatar"));
+				
+				String gender = rs.getString("gender");
+				if ("Male".equalsIgnoreCase(gender)) {
+					rbtnMale.setSelected(true);
+				} else {
+					rbtnFemale.setSelected(true);
+				}
+				
+				// Select the corresponding row
+				for (int i = 0; i < table.getRowCount(); i++) {
+					if ((int) table.getValueAt(i, 0) == id) {
+						table.setRowSelectionInterval(i, i);
+						break;
+					}
+				}
 			}
-
 		} catch (SQLException e) {
 			e.printStackTrace();
-			JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+			JOptionPane.showMessageDialog(this,
+				"Error loading user for edit: " + e.getMessage(),
+				"Database Error",
+				JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
+	private void showUserDetailDialog(int userId) {
+		try {
+			connection = DBConnection.getConnection();
+			String query = "SELECT * FROM tbl_user WHERE id = ?";
+			PreparedStatement ps = connection.prepareStatement(query);
+			ps.setInt(1, userId);
+			ResultSet rs = ps.executeQuery();
+
+			if (rs.next()) {
+				// Create custom dialog
+				JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "User Details", true);
+				dialog.setLayout(new BorderLayout(10, 10));
+				dialog.setSize(400, 500);
+				dialog.setLocationRelativeTo(this);
+
+				// Create main panel with padding
+				JPanel mainPanel = new JPanel();
+				mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+				mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+
+				// Add avatar if exists
+				String avatarUrl = rs.getString("avatar");
+				if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
+					try {
+						ImageIcon avatarIcon = new ImageIcon(new URL(avatarUrl));
+						Image img = avatarIcon.getImage();
+						Image scaledImg = img.getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+						JLabel avatarLabel = new JLabel(new ImageIcon(scaledImg));
+						avatarLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+						mainPanel.add(avatarLabel);
+						mainPanel.add(Box.createVerticalStrut(20));
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+
+				// Add user details
+				addDetailRow(mainPanel, "ID", rs.getString("id"));
+				addDetailRow(mainPanel, "Username", rs.getString("username"));
+				addDetailRow(mainPanel, "Email", rs.getString("email"));
+				addDetailRow(mainPanel, "Gender", rs.getString("gender"));
+				addDetailRow(mainPanel, "Address", rs.getString("address"));
+
+				// Add close button
+				JButton closeButton = new JButton("Close");
+				closeButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+				closeButton.setBackground(new Color(52, 152, 219));
+				closeButton.setForeground(Color.WHITE);
+				closeButton.setFocusPainted(false);
+				closeButton.addActionListener(e -> dialog.dispose());
+				
+				mainPanel.add(Box.createVerticalStrut(20));
+				mainPanel.add(closeButton);
+
+				// Add main panel to dialog
+				dialog.add(mainPanel);
+
+				// Show dialog
+				dialog.setVisible(true);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(this,
+				"Error loading user details: " + e.getMessage(),
+				"Database Error",
+				JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
+	private void addDetailRow(JPanel panel, String label, String value) {
+		JPanel rowPanel = new JPanel(new BorderLayout(10, 5));
+		rowPanel.setMaximumSize(new Dimension(350, 30));
+		
+		JLabel lblField = new JLabel(label + ":");
+		lblField.setFont(new Font("Segoe UI", Font.BOLD, 12));
+		
+		JLabel lblValue = new JLabel(value);
+		lblValue.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+		
+		rowPanel.add(lblField, BorderLayout.WEST);
+		rowPanel.add(lblValue, BorderLayout.CENTER);
+		
+		panel.add(rowPanel);
+		panel.add(Box.createVerticalStrut(10));
+	}
+
+	private void addUser() {
+		// Validation cho thêm mới (isUpdate = false)
+		if (!validateInput(false)) {
+			return;
+		}
+
+		try {
+			connection = DBConnection.getConnection();
+			String sql = "INSERT INTO tbl_user (username, email, password, gender, address, avatar) VALUES (?, ?, ?, ?, ?, ?)";
+			PreparedStatement ps = connection.prepareStatement(sql);
+			ps.setString(1, txtUsername.getText().trim());
+			ps.setString(2, txtEmail.getText().trim());
+			ps.setString(3, new String(txtPassword.getPassword()));
+			ps.setString(4, rbtnMale.isSelected() ? "Male" : "Female");
+			ps.setString(5, txtAddress.getText().trim());
+			String avatar = txtAvatar.getText().trim();
+			ps.setString(6, avatar.isEmpty() ? null : avatar);
+
+			int result = ps.executeUpdate();
+			if (result > 0) {
+				JOptionPane.showMessageDialog(this,
+					"User added successfully!",
+					"Success",
+					JOptionPane.INFORMATION_MESSAGE);
+				loadUsers("");
+				clearFields();
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(this,
+				"Error adding user: " + e.getMessage(),
+				"Database Error",
+				JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
 	private void updateUser() {
 		int selectedRow = table.getSelectedRow();
 		if (selectedRow == -1) {
-			JOptionPane.showMessageDialog(this, "Please select a user to update.");
+			JOptionPane.showMessageDialog(this,
+				"Please select a user to update!",
+				"Selection Required",
+				JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 
-		int userId = (int) table.getValueAt(selectedRow, 0);
+		// Validation cho cập nhật (isUpdate = true)
+		if (!validateInput(true)) {
+			return;
+		}
+
 		try {
-			String username = txtUsername.getText();
-			String email = txtEmail.getText();
+			int id = (int) tableModel.getValueAt(selectedRow, 0);
+			connection = DBConnection.getConnection();
+			
+			// Kiểm tra xem có nhập password mới không
 			String password = new String(txtPassword.getPassword());
-			String gender = rbtnMale.isSelected() ? "Male" : "Female";
-			String address = txtAddress.getText();
-			String avatar = txtAvatar.getText();
-
-			String sql = "UPDATE tbl_user SET username = ?, email = ?, password = ?, gender = ?, address = ?, avatar = ? WHERE id = ?";
-			PreparedStatement statement = connection.prepareStatement(sql);
-			statement.setString(1, username);
-			statement.setString(2, email);
-			statement.setString(3, password);
-			statement.setString(4, gender);
-			statement.setString(5, address);
-			statement.setString(6, avatar.isEmpty() ? null : avatar);
-			statement.setInt(7, userId);
-
-			int rowsAffected = statement.executeUpdate();
-			if (rowsAffected > 0) {
-				JOptionPane.showMessageDialog(this, "User updated successfully!");
-				loadUsers("");
-				clearFields();
+			String sql;
+			PreparedStatement ps;
+			
+			if (password.isEmpty()) {
+				// Nếu không nhập password mới, không cập nhật password
+				sql = "UPDATE tbl_user SET username = ?, email = ?, gender = ?, address = ?, avatar = ? WHERE id = ?";
+				ps = connection.prepareStatement(sql);
+				ps.setString(1, txtUsername.getText().trim());
+				ps.setString(2, txtEmail.getText().trim());
+				ps.setString(3, rbtnMale.isSelected() ? "Male" : "Female");
+				ps.setString(4, txtAddress.getText().trim());
+				String avatar = txtAvatar.getText().trim();
+				ps.setString(5, avatar.isEmpty() ? null : avatar);
+				ps.setInt(6, id);
 			} else {
-				JOptionPane.showMessageDialog(this, "Error updating user.");
+				// Nếu có nhập password mới, cập nhật cả password
+				sql = "UPDATE tbl_user SET username = ?, email = ?, password = ?, gender = ?, address = ?, avatar = ? WHERE id = ?";
+				ps = connection.prepareStatement(sql);
+				ps.setString(1, txtUsername.getText().trim());
+				ps.setString(2, txtEmail.getText().trim());
+				ps.setString(3, password);
+				ps.setString(4, rbtnMale.isSelected() ? "Male" : "Female");
+				ps.setString(5, txtAddress.getText().trim());
+				String avatar = txtAvatar.getText().trim();
+				ps.setString(6, avatar.isEmpty() ? null : avatar);
+				ps.setInt(7, id);
 			}
 
+			int result = ps.executeUpdate();
+			if (result > 0) {
+				JOptionPane.showMessageDialog(this,
+					"User updated successfully!",
+					"Success",
+					JOptionPane.INFORMATION_MESSAGE);
+				loadUsers("");
+				clearFields();
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
-			JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+			JOptionPane.showMessageDialog(this,
+				"Error updating user: " + e.getMessage(),
+				"Database Error",
+				JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
 	private void deleteUser() {
 		int selectedRow = table.getSelectedRow();
 		if (selectedRow == -1) {
-			JOptionPane.showMessageDialog(this, "Please select a user to delete.");
+			JOptionPane.showMessageDialog(this,
+				"Please select a user to delete!",
+				"Selection Required",
+				JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 
-		int userId = (int) table.getValueAt(selectedRow, 0);
-		try {
-			String sql = "DELETE FROM tbl_user WHERE id = ?";
-			PreparedStatement statement = connection.prepareStatement(sql);
-			statement.setInt(1, userId);
+		int confirm = JOptionPane.showConfirmDialog(this,
+			"Are you sure you want to delete this user?",
+			"Confirm Delete",
+			JOptionPane.YES_NO_OPTION,
+			JOptionPane.WARNING_MESSAGE);
 
-			int rowsAffected = statement.executeUpdate();
-			if (rowsAffected > 0) {
-				JOptionPane.showMessageDialog(this, "User deleted successfully!");
+		if (confirm == JOptionPane.YES_OPTION) {
+			try {
+				int id = (int) tableModel.getValueAt(selectedRow, 0);
+				connection = DBConnection.getConnection();
+			String sql = "DELETE FROM tbl_user WHERE id = ?";
+				PreparedStatement ps = connection.prepareStatement(sql);
+				ps.setInt(1, id);
+
+				int result = ps.executeUpdate();
+				if (result > 0) {
+					JOptionPane.showMessageDialog(this,
+						"User deleted successfully!",
+						"Success",
+						JOptionPane.INFORMATION_MESSAGE);
 				loadUsers("");
 				clearFields();
-			} else {
-				JOptionPane.showMessageDialog(this, "Error deleting user.");
 			}
-
 		} catch (SQLException e) {
 			e.printStackTrace();
-			JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+				JOptionPane.showMessageDialog(this,
+					"Error deleting user: " + e.getMessage(),
+					"Database Error",
+					JOptionPane.ERROR_MESSAGE);
+			}
 		}
+	}
+
+	private boolean validateInput(boolean isUpdate) {
+		String username = txtUsername.getText().trim();
+		String email = txtEmail.getText().trim();
+		String password = new String(txtPassword.getPassword());
+		
+		if (username.isEmpty()) {
+			JOptionPane.showMessageDialog(this,
+				"Username is required!",
+				"Validation Error",
+				JOptionPane.ERROR_MESSAGE);
+			txtUsername.requestFocus();
+			return false;
+		}
+		
+		if (email.isEmpty()) {
+			JOptionPane.showMessageDialog(this,
+				"Email is required!",
+				"Validation Error",
+				JOptionPane.ERROR_MESSAGE);
+			txtEmail.requestFocus();
+			return false;
+		}
+		
+		if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+			JOptionPane.showMessageDialog(this,
+				"Invalid email format!",
+				"Validation Error",
+				JOptionPane.ERROR_MESSAGE);
+			txtEmail.requestFocus();
+			return false;
+		}
+		
+		// Chỉ validate password khi thêm mới hoặc khi có nhập password mới
+		if (!isUpdate && password.isEmpty()) {
+			JOptionPane.showMessageDialog(this,
+				"Password is required!",
+				"Validation Error",
+				JOptionPane.ERROR_MESSAGE);
+			txtPassword.requestFocus();
+			return false;
+		}
+		
+		if (!rbtnMale.isSelected() && !rbtnFemale.isSelected()) {
+			JOptionPane.showMessageDialog(this,
+				"Please select a gender!",
+				"Validation Error",
+				JOptionPane.ERROR_MESSAGE);
+			return false;
+		}
+		
+		return true;
 	}
 
 	private void clearFields() {
@@ -387,106 +689,6 @@ public class ListUsers extends JPanel {
 		txtAddress.setText("");
 		txtAvatar.setText("");
 		genderGroup.clearSelection();
-	}
-
-	// ButtonRenderer class to render button in table
-	class ButtonRenderer extends JButton implements javax.swing.table.TableCellRenderer {
-		public ButtonRenderer() {
-			setOpaque(true);
-			try {
-				// Load icon and scale it to 30x30
-				ImageIcon icon = new ImageIcon(getClass().getResource("/icons/view.png"));
-				Image scaledIcon = icon.getImage().getScaledInstance(30, 30, Image.SCALE_SMOOTH);
-				setIcon(new ImageIcon(scaledIcon));
-			} catch (Exception e) {
-				e.printStackTrace();
-				setText("Detail"); // Fallback if icon is missing
-			}
-		}
-
-		@Override
-		public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
-				int row, int column) {
-			setText(""); // Hide text since we are using an icon
-			return this;
-		}
-	}
-
-	// ButtonEditor class to handle button click events
-	class ButtonEditor extends DefaultCellEditor {
-		private JButton button;
-		private String label;
-		private boolean clicked;
-
-		public ButtonEditor(JCheckBox checkBox) {
-			super(checkBox);
-			button = new JButton();
-			button.setOpaque(true);
-
-			button.addActionListener(e -> fireEditingStopped());
-		}
-
-		@Override
-		public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row,
-				int column) {
-			label = (value == null) ? "Detail" : value.toString();
-			button.setText(label);
-			clicked = true;
-			return button;
-		}
-
-		@Override
-		public Object getCellEditorValue() {
-			if (clicked) {
-				int row = table.getSelectedRow();
-				String avatarLink = (table.getValueAt(row, 2) != null ? table.getValueAt(row, 2).toString() : "empty");
-				String userDetails = "ID: " + table.getValueAt(row, 0) + "\n" + "Username: " + table.getValueAt(row, 1)
-						+ "\n" + "Email: " + table.getValueAt(row, 3) + "\n" + "Gender: " + table.getValueAt(row, 4)
-						+ "\n" + "Address: " + table.getValueAt(row, 5);
-
-				// Create a dialog
-				JDialog dialog = new JDialog((Frame) null, "User Details", true);
-				dialog.setLayout(new BorderLayout());
-
-				// Add user details text
-				JTextArea textArea = new JTextArea(userDetails);
-				textArea.setEditable(false);
-				textArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-				dialog.add(new JScrollPane(textArea), BorderLayout.CENTER);
-
-				// Add avatar image if available
-				if (!avatarLink.equals("empty")) {
-					try {
-						ImageIcon avatarIcon = new ImageIcon(new URL(avatarLink));
-						Image avatarImage = avatarIcon.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
-						JLabel avatarLabel = new JLabel(new ImageIcon(avatarImage));
-						avatarLabel.setHorizontalAlignment(SwingConstants.CENTER);
-						dialog.add(avatarLabel, BorderLayout.NORTH);
-					} catch (Exception e) {
-						// Log or handle invalid URL or image loading error
-						JLabel errorLabel = new JLabel("Avatar not available", SwingConstants.CENTER);
-						dialog.add(errorLabel, BorderLayout.NORTH);
-					}
-				}
-
-				// Set dialog properties
-				dialog.setSize(300, 300);
-				dialog.setLocationRelativeTo(null); // Center on screen
-				dialog.setVisible(true);
-			}
-			clicked = false;
-			return label;
-		}
-
-		@Override
-		public boolean stopCellEditing() {
-			clicked = false;
-			return super.stopCellEditing();
-		}
-
-		@Override
-		protected void fireEditingStopped() {
-			super.fireEditingStopped();
-		}
+		table.clearSelection();
 	}
 }
