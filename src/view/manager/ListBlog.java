@@ -1,5 +1,4 @@
-package view;
-
+package view.manager;
 import com.formdev.flatlaf.FlatLightLaf; // Import FlatLaf
 import com.toedter.calendar.JDateChooser;
 

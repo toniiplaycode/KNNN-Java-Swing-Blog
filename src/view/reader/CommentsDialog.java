@@ -1,5 +1,4 @@
-package view;
-
+package view.reader;
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
@@ -31,6 +30,7 @@ public class CommentsDialog extends JDialog {
     private int postId;
     private int userId;
     private JPanel commentsPanel;
+    private JTextField txtComment;
     private SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
     private Runnable onCommentAdded; // Callback khi thêm comment
     private JPanel selectedCommentPanel; // Panel của comment đang được reply
@@ -43,55 +43,40 @@ public class CommentsDialog extends JDialog {
         this.userId = userId;
         this.onCommentAdded = onCommentAdded;
         
-        initializeUI();
-        loadComments();
-    }
-    
-    private void initializeUI() {
         setLayout(new BorderLayout(10, 10));
         setSize(500, 600);
-        setLocationRelativeTo(getOwner());
+        setLocationRelativeTo(parent);
         
-        // Panel chứa danh sách comments
+        // Comment input panel
+        JPanel inputPanel = new JPanel(new BorderLayout(5, 0));
+        inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        txtComment = new JTextField();
+        txtComment.setPreferredSize(new Dimension(0, 35));
+        
+        JButton btnComment = new JButton("Comment");
+        styleButton(btnComment, new Color(52, 152, 219));
+        btnComment.addActionListener(e -> {
+            String content = txtComment.getText().trim();
+            if (!content.isEmpty()) {
+                addComment(content);
+                txtComment.setText("");
+            }
+        });
+        
+        inputPanel.add(txtComment, BorderLayout.CENTER);
+        inputPanel.add(btnComment, BorderLayout.EAST);
+        
+        // Comments panel
         commentsPanel = new JPanel();
         commentsPanel.setLayout(new BoxLayout(commentsPanel, BoxLayout.Y_AXIS));
-        commentsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        commentsPanel.setBackground(Color.WHITE);
-        
-        // ScrollPane cho comments
         JScrollPane scrollPane = new JScrollPane(commentsPanel);
         scrollPane.setBorder(null);
         
-        // Panel để thêm comment mới
-        JPanel addCommentPanel = createAddCommentPanel();
-        
         add(scrollPane, BorderLayout.CENTER);
-        add(addCommentPanel, BorderLayout.SOUTH);
-    }
-    
-    private JPanel createAddCommentPanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        panel.setBackground(Color.WHITE);
+        add(inputPanel, BorderLayout.SOUTH);
         
-        JTextArea txtNewComment = new JTextArea(3, 20);
-        txtNewComment.setLineWrap(true);
-        txtNewComment.setWrapStyleWord(true);
-        txtNewComment.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(new Color(200, 200, 200)),
-            new EmptyBorder(5, 5, 5, 5)
-        ));
-        
-        JButton btnAddComment = new JButton("Post Comment");
-        styleButton(btnAddComment, new Color(52, 152, 219));
-        btnAddComment.setPreferredSize(new Dimension(120, 35));
-        
-        btnAddComment.addActionListener(e -> addComment(txtNewComment.getText().trim()));
-        
-        panel.add(new JScrollPane(txtNewComment), BorderLayout.CENTER);
-        panel.add(btnAddComment, BorderLayout.EAST);
-        
-        return panel;
+        loadComments();
     }
     
     private void loadComments() {
@@ -351,12 +336,35 @@ public class CommentsDialog extends JDialog {
             ps.setInt(4, parentId);
             ps.executeUpdate();
             
-            // Clear cache của parent comment để load lại
+            // Chỉ xóa cache của replies cho parent comment này
             loadedReplies.remove(parentId);
-            repliesVisible.put(parentId, false);
             
-            // Reload all comments
+            // Giữ nguyên trạng thái hiển thị của replies
+            boolean wasVisible = repliesVisible.getOrDefault(parentId, false);
+            
+            // Reload tất cả comments
             loadComments();
+            
+            // Khôi phục trạng thái hiển thị của replies nếu đang được hiển thị
+            if (wasVisible) {
+                // Tìm parent comment panel
+                for (Component comp : commentsPanel.getComponents()) {
+                    if (comp instanceof JPanel) {
+                        JPanel panel = (JPanel) comp;
+                        Integer commentId = (Integer) panel.getClientProperty("comment_id");
+                        if (commentId != null && commentId == parentId) {
+                            // Lấy indent level của parent comment
+                            Integer level = (Integer) panel.getClientProperty("comment_level");
+                            if (level != null) {
+                                // Load và hiển thị lại replies với indent level phù hợp
+                                loadReplies(parentId, panel, level + 1);
+                                repliesVisible.put(parentId, true);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
             
             // Notify parent
             if (onCommentAdded != null) {
@@ -384,10 +392,10 @@ public class CommentsDialog extends JDialog {
             ps.setString(3, content);
             ps.executeUpdate();
             
-            // Reload comments
+            // Refresh danh sách comments
             loadComments();
             
-            // Notify parent
+            // Cập nhật số lượng comment trong NewsFeed
             if (onCommentAdded != null) {
                 onCommentAdded.run();
             }

@@ -1,4 +1,7 @@
-package view;
+package view.reader;
+
+import view.MainManage;
+import view.Login; 
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -19,6 +22,7 @@ import java.awt.image.BufferedImage;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.awt.geom.Ellipse2D;
+import java.util.prefs.Preferences;
 
 public class NewsFeed extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -78,51 +82,198 @@ public class NewsFeed extends JFrame {
     }
     
     private JPanel createHeaderPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(new EmptyBorder(0, 0, 10, 0));
+        JPanel headerPanel = new JPanel(new BorderLayout(10, 0));
+        headerPanel.setBackground(Color.WHITE);
+        headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         
         // User info panel
-        JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JLabel lblWelcome = new JLabel("Welcome back!");
-        lblWelcome.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        userPanel.add(lblWelcome);
+        JPanel userPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        userPanel.setOpaque(false);
+        
+        try {
+            connection = DBConnection.getConnection();
+            String query = "SELECT username, email, avatar FROM tbl_user WHERE id = ?";
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                String username = rs.getString("username");
+                String email = rs.getString("email");
+                String avatarUrl = rs.getString("avatar");
+                
+                // Avatar
+                JLabel avatarLabel = new JLabel();
+                avatarLabel.setPreferredSize(new Dimension(40, 40));
+                
+                if (avatarUrl != null && !avatarUrl.trim().isEmpty()) {
+                    try {
+                        // Tải và tạo avatar tròn từ URL
+                        URL url = new URL(avatarUrl);
+                        BufferedImage originalImage = ImageIO.read(url);
+                        
+                        // Tạo ảnh tròn
+                        BufferedImage circularImage = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+                        Graphics2D g2 = circularImage.createGraphics();
+                        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                        Ellipse2D.Double circle = new Ellipse2D.Double(0, 0, 40, 40);
+                        g2.setClip(circle);
+                        g2.drawImage(originalImage.getScaledInstance(40, 40, Image.SCALE_SMOOTH), 0, 0, null);
+                        g2.dispose();
+                        
+                        avatarLabel.setIcon(new ImageIcon(circularImage));
+                    } catch (Exception e) {
+                        // Nếu không tải được ảnh, hiển thị chữ cái đầu của username
+                        createDefaultAvatar(avatarLabel, username);
+                    }
+                } else {
+                    // Nếu không có avatar URL, hiển thị chữ cái đầu của username
+                    createDefaultAvatar(avatarLabel, username);
+                }
+                
+                // Panel chứa thông tin user
+                JPanel userInfoPanel = new JPanel();
+                userInfoPanel.setLayout(new BoxLayout(userInfoPanel, BoxLayout.Y_AXIS));
+                userInfoPanel.setOpaque(false);
+                
+                // Username
+                JLabel lblUsername = new JLabel(username);
+                lblUsername.setFont(new Font("Segoe UI", Font.BOLD, 14));
+                
+                // Email
+                JLabel lblEmail = new JLabel(email);
+                lblEmail.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                lblEmail.setForeground(new Color(102, 102, 102));
+                
+                userInfoPanel.add(lblUsername);
+                userInfoPanel.add(lblEmail);
+                
+                userPanel.add(avatarLabel);
+                userPanel.add(userInfoPanel);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        // Search panel
+        JPanel searchPanel = new JPanel(new BorderLayout(5, 0));
+        searchPanel.setOpaque(false);
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 20));
+        
+        // Search field
+        JTextField searchField = new JTextField();
+        searchField.setPreferredSize(new Dimension(0, 35));
+        // Placeholder text
+        searchField.setText("Tìm kiếm bài viết...");
+        searchField.setForeground(Color.GRAY);
+        searchField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (searchField.getText().equals("Tìm kiếm bài viết...")) {
+                    searchField.setText("");
+                    searchField.setForeground(Color.BLACK);
+                }
+            }
+            
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (searchField.getText().isEmpty()) {
+                    searchField.setText("Tìm kiếm bài viết...");
+                    searchField.setForeground(Color.GRAY);
+                }
+            }
+        });
+        
+        // Search button
+        JButton btnSearch = new JButton("Tìm kiếm");
+        styleButton(btnSearch, new Color(52, 152, 219));
+        
+        // Add Enter key listener
+        searchField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    btnSearch.doClick();
+                }
+            }
+        });
+        
+        searchPanel.add(searchField, BorderLayout.CENTER);
+        searchPanel.add(btnSearch, BorderLayout.EAST);
         
         // Action buttons panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        buttonPanel.setOpaque(false);
         
-        // Nút New Post
-        JButton btnNewPost = new JButton("Bài viết mới");
-        styleButton(btnNewPost, new Color(52, 152, 219));
-        btnNewPost.addActionListener(e -> createNewPost());
+        // Account Settings button
+        JButton btnAccount = createHeaderButton("Tài khoản", "/icons/user.png");
+        btnAccount.addActionListener(e -> {
+            AccountSettings dialog = new AccountSettings(
+                (JFrame) SwingUtilities.getWindowAncestor(this), 
+                userId
+            );
+            dialog.setVisible(true);
+        });
         
-        // Nút chuyển sang Manager
-        JButton btnSwitchToManager = new JButton("Chuyển sang quản lý");
-        styleButton(btnSwitchToManager, new Color(46, 204, 113));
+        // Add Post button
+        JButton btnAddPost = createHeaderButton("Bài viết mới", "/icons/edit.png");
+        btnAddPost.addActionListener(e -> {
+            AddPostDialog dialog = new AddPostDialog(
+                (JFrame) SwingUtilities.getWindowAncestor(this),
+                userId,
+                () -> loadPosts()
+            );
+            dialog.setVisible(true);
+        });
+        
+        // Switch to Manager button
+        JButton btnSwitchToManager = createHeaderButton("Chuyển sang quản lý", "/icons/switch.png");
         btnSwitchToManager.addActionListener(e -> {
-            // Tìm frame cha và đóng nó
-            JFrame currentFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-            if (currentFrame != null) {
-                currentFrame.dispose();
+            Window window = SwingUtilities.getWindowAncestor(this);
+            if (window instanceof JFrame) {
+                window.dispose();
             }
-            // Mở giao diện quản lý
             MainManage manager = new MainManage(userId);
             manager.initManagerUI();
         });
         
-        // Nút Logout
-        JButton btnLogout = new JButton("Đăng xuất");
-        styleButton(btnLogout, new Color(231, 76, 60));
+        // Logout button
+        JButton btnLogout = createHeaderButton("Đăng xuất", "/icons/logout.png");
         btnLogout.addActionListener(e -> logout());
         
-        // Thêm các nút vào panel
-        buttonPanel.add(btnNewPost);
+        buttonPanel.add(btnAccount);
+        buttonPanel.add(btnAddPost);
         buttonPanel.add(btnSwitchToManager);
         buttonPanel.add(btnLogout);
         
-        panel.add(userPanel, BorderLayout.WEST);
-        panel.add(buttonPanel, BorderLayout.EAST);
+        headerPanel.add(userPanel, BorderLayout.WEST);
+        headerPanel.add(searchPanel, BorderLayout.CENTER);
+        headerPanel.add(buttonPanel, BorderLayout.EAST);
         
-        return panel;
+        return headerPanel;
+    }
+    
+    private void createDefaultAvatar(JLabel avatarLabel, String username) {
+        // Tạo avatar mặc định với chữ cái đầu của username
+        BufferedImage defaultAvatar = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = defaultAvatar.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        
+        // Vẽ hình tròn
+        g2.setColor(new Color(52, 152, 219));
+        g2.fill(new Ellipse2D.Double(0, 0, 40, 40));
+        
+        // Vẽ chữ
+        g2.setColor(Color.WHITE);
+        g2.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        String initial = username.substring(0, 1).toUpperCase();
+        FontMetrics fm = g2.getFontMetrics();
+        int x = (40 - fm.stringWidth(initial)) / 2;
+        int y = ((40 - fm.getHeight()) / 2) + fm.getAscent();
+        g2.drawString(initial, x, y);
+        g2.dispose();
+        
+        avatarLabel.setIcon(new ImageIcon(defaultAvatar));
     }
     
     private void loadPosts() {
@@ -188,49 +339,103 @@ public class NewsFeed extends JFrame {
         }
     }
     
-    private JPanel createPostPanel(int postId, String username, String title, 
-            String content, Timestamp createdAt, int likeCount, 
-            int commentCount, boolean userLiked, String hashImg, String avatar) {
+    private JPanel createPostPanel(int postId, String username, String title, String content, 
+            Timestamp postDate, int likeCount, int commentCount, boolean userLiked,
+            String hashImg, String avatar) {
         
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(new Color(240, 240, 240), 1),
+        JPanel postPanel = new JPanel(new BorderLayout(10, 10));
+        postPanel.setBackground(Color.WHITE);
+        postPanel.setBorder(BorderFactory.createCompoundBorder(
+            new LineBorder(new Color(240, 240, 240)),
             new EmptyBorder(15, 15, 15, 15)
         ));
-        panel.setBackground(Color.WHITE);
         
-        // Header (username + date)
-        JPanel headerPanel = new JPanel(new BorderLayout());
+        // Header panel chứa thông tin user và nút delete
+        JPanel headerPanel = new JPanel(new BorderLayout(10, 0));
         headerPanel.setOpaque(false);
         
-        // User info với avatar
+        // User info panel (bên trái)
         JPanel userInfoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         userInfoPanel.setOpaque(false);
         
         // Avatar
         JLabel avatarLabel = createAvatarLabel(username, avatar);
-        userInfoPanel.add(avatarLabel);
         
-        // Username và date trong panel dọc
-        JPanel nameDatePanel = new JPanel();
-        nameDatePanel.setLayout(new BoxLayout(nameDatePanel, BoxLayout.Y_AXIS));
-        nameDatePanel.setOpaque(false);
+        // Panel chứa username và date
+        JPanel nameTimePanel = new JPanel();
+        nameTimePanel.setLayout(new BoxLayout(nameTimePanel, BoxLayout.Y_AXIS));
+        nameTimePanel.setOpaque(false);
         
+        // Username
         JLabel lblUsername = new JLabel(username);
         lblUsername.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblUsername.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        JLabel lblDate = new JLabel(sdf.format(createdAt));
+        // Date
+        JLabel lblDate = new JLabel(sdf.format(postDate));
         lblDate.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        lblDate.setForeground(new Color(150, 150, 150));
+        lblDate.setForeground(Color.GRAY);
         lblDate.setAlignmentX(Component.LEFT_ALIGNMENT);
         
-        nameDatePanel.add(lblUsername);
-        nameDatePanel.add(lblDate);
+        nameTimePanel.add(lblUsername);
+        nameTimePanel.add(lblDate);
         
-        userInfoPanel.add(nameDatePanel);
+        userInfoPanel.add(avatarLabel);
+        userInfoPanel.add(nameTimePanel);
+        
+        // Delete button panel (bên phải)
+        JPanel deletePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        deletePanel.setOpaque(false);
+        
+        // Kiểm tra xem post có phải của user hiện tại không
+        try {
+            connection = DBConnection.getConnection();
+            String query = "SELECT user_id FROM tbl_post WHERE id = ?";
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setInt(1, postId);
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next() && rs.getInt("user_id") == userId) {
+                // Tạo nút delete với icon
+                JButton btnDelete = new JButton();
+                ImageIcon deleteIcon = new ImageIcon(getClass().getResource("/icons/trash.png"));
+                Image img = deleteIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                btnDelete.setIcon(new ImageIcon(img));
+                
+                // Style cho nút delete
+                btnDelete.setBorderPainted(false);
+                btnDelete.setContentAreaFilled(false);
+                btnDelete.setFocusPainted(false);
+                btnDelete.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                btnDelete.setToolTipText("Delete post");
+                
+                // Thêm hover effect
+                btnDelete.addMouseListener(new MouseAdapter() {
+                    public void mouseEntered(MouseEvent e) {
+                        btnDelete.setContentAreaFilled(true);
+                        btnDelete.setBackground(new Color(255, 235, 235));
+                    }
+                    public void mouseExited(MouseEvent e) {
+                        btnDelete.setContentAreaFilled(false);
+                    }
+                });
+                
+                // Xử lý sự kiện click delete
+                btnDelete.addActionListener(e -> {
+                    deletePost(postId);
+                });
+                
+                deletePanel.add(btnDelete);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         
         headerPanel.add(userInfoPanel, BorderLayout.WEST);
+        headerPanel.add(deletePanel, BorderLayout.EAST);
+        
+        // Thêm các phần còn lại của post panel
+        postPanel.add(headerPanel, BorderLayout.NORTH);
         
         // Thêm title vào panel riêng và đặt dưới header
         JPanel titlePanel = new JPanel(new BorderLayout());
@@ -421,11 +626,11 @@ public class NewsFeed extends JFrame {
         actionsPanel.add(btnShowComments);
         
         // Add all components
-        panel.add(topPanel, BorderLayout.NORTH);
-        panel.add(contentPanel, BorderLayout.CENTER);
-        panel.add(actionsPanel, BorderLayout.SOUTH);
+        postPanel.add(topPanel, BorderLayout.NORTH);
+        postPanel.add(contentPanel, BorderLayout.CENTER);
+        postPanel.add(actionsPanel, BorderLayout.SOUTH);
         
-        return panel;
+        return postPanel;
     }
     
     private String formatContent(String content) {
@@ -485,16 +690,39 @@ public class NewsFeed extends JFrame {
     }
     
     private void logout() {
-        int choice = JOptionPane.showConfirmDialog(this,
-            "Bạn có chắc muốn đăng xuất?",
+        int choice = JOptionPane.showConfirmDialog(
+            SwingUtilities.getWindowAncestor(this),
+            "Bạn có chắc chắn muốn đăng xuất?",
             "Xác nhận đăng xuất",
-            JOptionPane.YES_NO_OPTION);
-            
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        
         if (choice == JOptionPane.YES_OPTION) {
+            // Xóa thông tin đăng nhập đã lưu
+            Preferences prefs = Preferences.userRoot();
+            prefs.remove("reader_email");
+            prefs.remove("reader_password");
+            
+            // Hiển thị thông báo
+            JOptionPane.showMessageDialog(
+                SwingUtilities.getWindowAncestor(this),
+                "Đăng xuất thành công!",
+                "Thông báo",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+            
+            // Lấy frame hiện tại
             Window window = SwingUtilities.getWindowAncestor(this);
+            
+            // Đóng frame NewsFeed
             if (window instanceof JFrame) {
                 window.dispose();
-                new Login().setVisible(true);
+                
+                // Mở SignIn sau khi đã đóng NewsFeed
+                SwingUtilities.invokeLater(() -> {
+                    new SignIn().setVisible(true);
+                });
             }
         }
     }
@@ -769,4 +997,188 @@ public class NewsFeed extends JFrame {
             }).start();
         });
     }
+    
+    private void deletePost(int postId) {
+        // Hiển thị dialog xác nhận với icon cảnh báo
+        int choice = JOptionPane.showConfirmDialog(
+            SwingUtilities.getWindowAncestor(this), // Sử dụng parent window
+            "Bạn có chắc chắn muốn xóa bài viết này không?",
+            "Xác nhận xóa",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+        
+        if (choice == JOptionPane.YES_OPTION) {
+            try {
+                connection = DBConnection.getConnection();
+                
+                // Xóa likes
+                String deleteLikes = "DELETE FROM tbl_like WHERE post_id = ?";
+                PreparedStatement psLikes = connection.prepareStatement(deleteLikes);
+                psLikes.setInt(1, postId);
+                psLikes.executeUpdate();
+                
+                // Xóa comments
+                String deleteComments = "DELETE FROM tbl_comment WHERE post_id = ?";
+                PreparedStatement psComments = connection.prepareStatement(deleteComments);
+                psComments.setInt(1, postId);
+                psComments.executeUpdate();
+                
+                // Xóa post
+                String deletePost = "DELETE FROM tbl_post WHERE id = ?";
+                PreparedStatement psPost = connection.prepareStatement(deletePost);
+                psPost.setInt(1, postId);
+                psPost.executeUpdate();
+                
+                // Thông báo thành công trước khi refresh UI
+                JOptionPane.showMessageDialog(
+                    SwingUtilities.getWindowAncestor(this),
+                    "Xóa bài viết thành công!",
+                    "Thành công",
+                    JOptionPane.INFORMATION_MESSAGE
+                );
+                
+                // Refresh UI trên EDT
+                SwingUtilities.invokeLater(() -> {
+                    // Refresh newsfeed
+                    loadPosts();
+                    // Scroll lên đầu trang
+                    scrollToTop();
+                    // Revalidate và repaint parent container
+                    Container parent = getParent();
+                    if (parent != null) {
+                        parent.revalidate();
+                        parent.repaint();
+                    }
+                });
+                
+            } catch (SQLException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(
+                    SwingUtilities.getWindowAncestor(this),
+                    "Lỗi khi xóa bài viết: " + e.getMessage(),
+                    "Lỗi",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
+    }
+    
+    private void searchPosts(String searchText) {
+        mainPanel.removeAll();
+        
+        // Thêm panel căn giữa để chứa tất cả posts
+        JPanel centerPanel = new JPanel();
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+        centerPanel.setOpaque(false);
+        
+        try {
+            connection = DBConnection.getConnection();
+            String query = """
+                SELECT p.*, u.username, u.avatar,
+                    (SELECT COUNT(*) FROM tbl_like WHERE post_id = p.id) as like_count,
+                    (SELECT COUNT(*) FROM tbl_comment WHERE post_id = p.id) as comment_count,
+                    EXISTS(SELECT 1 FROM tbl_like WHERE post_id = p.id AND user_id = ?) as user_liked,
+                    COALESCE(p.create_at, CURRENT_TIMESTAMP) as post_date,
+                    p.hash_img
+                FROM tbl_post p 
+                JOIN tbl_user u ON p.user_id = u.id 
+                WHERE p.title LIKE ? OR p.content LIKE ?
+                ORDER BY post_date DESC
+            """;
+            
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setInt(1, userId);
+            String searchPattern = "%" + searchText + "%";
+            ps.setString(2, searchPattern);
+            ps.setString(3, searchPattern);
+            ResultSet rs = ps.executeQuery();
+            
+            while (rs.next()) {
+                JPanel postPanel = createPostPanel(
+                    rs.getInt("id"),
+                    rs.getString("username"),
+                    rs.getString("title"),
+                    rs.getString("content"),
+                    rs.getTimestamp("post_date"),
+                    rs.getInt("like_count"),
+                    rs.getInt("comment_count"),
+                    rs.getBoolean("user_liked"),
+                    rs.getString("hash_img"),
+                    rs.getString("avatar")
+                );
+                
+                // Wrap postPanel trong một panel căn giữa
+                JPanel wrapperPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+                wrapperPanel.setOpaque(false);
+                postPanel.setPreferredSize(new Dimension(500, postPanel.getPreferredSize().height));
+                wrapperPanel.add(postPanel);
+                
+                centerPanel.add(wrapperPanel);
+                centerPanel.add(Box.createVerticalStrut(10));
+            }
+            
+            if (centerPanel.getComponentCount() == 0) {
+                // Không tìm thấy kết quả
+                JLabel noResultLabel = new JLabel("Không tìm thấy bài viết nào phù hợp");
+                noResultLabel.setFont(new Font("Segoe UI", Font.ITALIC, 14));
+                noResultLabel.setForeground(Color.GRAY);
+                noResultLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                centerPanel.add(Box.createVerticalStrut(50));
+                centerPanel.add(noResultLabel);
+            }
+            
+            mainPanel.add(centerPanel);
+            mainPanel.revalidate();
+            mainPanel.repaint();
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Lỗi khi tìm kiếm: " + e.getMessage(),
+                "Lỗi",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    // Thêm phương thức helper để tạo button với icon
+    private JButton createHeaderButton(String text, String iconPath) {
+        JButton button = new JButton(text);
+        try {
+            // Load và scale icon
+            ImageIcon icon = new ImageIcon(getClass().getResource(iconPath));
+            Image img = icon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+            button.setIcon(new ImageIcon(img));
+            button.setIconTextGap(8); // Khoảng cách giữa icon và text
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        // Style cho button
+        Color buttonColor = new Color(52, 152, 219); // Màu xanh dương
+        button.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        button.setForeground(Color.WHITE);
+        button.setBackground(buttonColor);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        button.setHorizontalAlignment(SwingConstants.LEFT);
+        
+        // Thêm padding
+        button.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
+        
+        // Hover effect
+        button.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(buttonColor.darker());
+            }
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(buttonColor);
+            }
+        });
+        
+        return button;
+    }
 } 
+
+

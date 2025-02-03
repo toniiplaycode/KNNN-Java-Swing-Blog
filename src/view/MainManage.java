@@ -3,6 +3,18 @@ package view;
 import javax.swing.*;
 import java.awt.*;
 import com.formdev.flatlaf.FlatLightLaf;
+import view.reader.NewsFeed;
+import view.reader.SignIn;
+import view.manager.ListBlog;
+import view.manager.ListUsers;
+import view.manager.StatisticsBlog;
+import view.manager.ProfileAdmin;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.prefs.Preferences;
+import utils.DBConnection;
 
 public class MainManage extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -164,21 +176,51 @@ public class MainManage extends JFrame {
     }
     
     public void initReaderUI() {
-        // Tạo frame mới cho NewsFeed
+        String savedEmail = getSavedEmail();
+        String savedHashedPassword = getSavedPassword();
+        
+        if (savedEmail != null && savedHashedPassword != null) {
+            try {
+                Connection connection = DBConnection.getConnection();
+                String query = "SELECT * FROM tbl_user WHERE email = ? AND password = ?";
+                PreparedStatement ps = connection.prepareStatement(query);
+                ps.setString(1, savedEmail);
+                ps.setString(2, savedHashedPassword);
+                ResultSet rs = ps.executeQuery();
+                
+                if (rs.next()) {
+                    int userId = rs.getInt("id");
+                    showNewsFeed(userId);
+                    return;
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+        
+        dispose();
+        new SignIn().setVisible(true);
+    }
+    
+    private void showNewsFeed(int userId) {
+        dispose();
         JFrame newsFeedFrame = new JFrame("News Feed");
         newsFeedFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         newsFeedFrame.setBounds(100, 100, 1200, 700);
         newsFeedFrame.setLocationRelativeTo(null);
         
-        // Tạo và thêm NewsFeed vào frame mới
         NewsFeed newsFeed = new NewsFeed(userId);
         newsFeedFrame.setContentPane(newsFeed.getContentPane());
-        
-        // Hiển thị frame mới
         newsFeedFrame.setVisible(true);
-        
-        // Đóng frame chọn role
-        dispose();
+    }
+    
+    // Phương thức để lấy thông tin đăng nhập đã lưu
+    private String getSavedEmail() {
+        return Preferences.userRoot().get("reader_email", null);
+    }
+    
+    private String getSavedPassword() {
+        return Preferences.userRoot().get("reader_password", null);
     }
     
     public void initManagerUI() {

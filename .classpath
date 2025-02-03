@@ -13,5 +13,6 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="C:/Users/Thanh Toan/Downloads/Compressed/jfreechart-1.0.19/jfreechart-1.0.19-demo.jar"/>
 	<classpathentry kind="lib" path="C:/Users/Thanh Toan/Downloads/Compressed/flatlaf-3.5.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Thanh Toan/Downloads/Compressed/jbcrypt-0.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

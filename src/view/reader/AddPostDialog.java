@@ -1,5 +1,4 @@
-package view;
-
+package view.reader;
 import javax.swing.*;
 import javax.swing.text.*;
 import javax.swing.text.html.*;
@@ -33,12 +32,12 @@ public class AddPostDialog extends JDialog {
         formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
         
         // Tiêu đề
-        JLabel lblTitle = new JLabel("Tiêu đề:");
+        JLabel lblTitle = new JLabel("Tiêu đề");
         JTextField txtTitle = new JTextField(20);
         txtTitle.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         
         // Nội dung với định dạng
-        JLabel lblContent = new JLabel("Nội dung:");
+        JLabel lblContent = new JLabel("Nội dung");
         JTextPane txtContent = new JTextPane();
         txtContent.setContentType("text/html");
         
@@ -51,7 +50,7 @@ public class AddPostDialog extends JDialog {
         editorPanel.add(new JScrollPane(txtContent), BorderLayout.CENTER);
         
         // URL ảnh
-        JLabel lblImageUrl = new JLabel("URL ảnh (mỗi URL một dòng):");
+        JLabel lblImageUrl = new JLabel("URL ảnh");
         JTextArea txtImageUrl = new JTextArea(4, 20);
         txtImageUrl.setLineWrap(true);
         JScrollPane scrollImage = new JScrollPane(txtImageUrl);
@@ -290,7 +289,16 @@ public class AddPostDialog extends JDialog {
             PreparedStatement ps = connection.prepareStatement(query);
             ps.setInt(1, userId);
             ps.setString(2, title);
-            ps.setString(3, content);
+            
+            // Loại bỏ các thẻ HTML bao ngoài và khoảng trắng thừa
+            String cleanContent = content
+                .replaceAll("(?s)<head\\b[^>]*>.*?</head>", "") // Xóa toàn bộ phần head và nội dung bên trong
+                .replaceAll("(?i)</?html[^>]*>", "") // Xóa thẻ html mở và đóng
+                .replaceAll("(?i)</?body[^>]*>", "") // Xóa thẻ body mở và đóng
+                .replaceAll("\\s+", " ") // Thay thế nhiều khoảng trắng bằng 1 khoảng trắng
+                .trim(); // Xóa khoảng trắng đầu và cuối
+                
+            ps.setString(3, cleanContent);
             ps.setString(4, imageUrls);
             ps.executeUpdate();
             

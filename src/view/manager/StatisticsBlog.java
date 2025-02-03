@@ -1,5 +1,4 @@
-package view;
-
+package view.manager;
 import javax.swing.*;
 import javax.swing.border.*;
 import javax.swing.table.*;
