@@ -173,12 +173,64 @@ public class CommentsDialog extends JDialog {
         panel.add(userInfoPanel, BorderLayout.NORTH);
         panel.add(txtContent, BorderLayout.CENTER);
         
-        // Add reply button
+        // Panel chứa nút Reply và Delete (nếu là comment của user hiện tại)
+        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        actionsPanel.setOpaque(false);
+        
+        // Nút Reply
         JButton btnReply = new JButton("Reply");
         btnReply.setBorderPainted(false);
         btnReply.setContentAreaFilled(false);
         btnReply.setForeground(new Color(52, 152, 219));
         btnReply.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnReply.addActionListener(e -> showReplyForm(commentId, panel));
+        actionsPanel.add(btnReply);
+        
+        // Kiểm tra xem comment có phải của user hiện tại không
+        try {
+            String query = "SELECT user_id FROM tbl_comment WHERE id = ?";
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setInt(1, commentId);
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next() && rs.getInt("user_id") == userId) {
+                // Thêm nút Delete nếu là comment của user hiện tại
+                JButton btnDelete = new JButton();
+                try {
+                    ImageIcon deleteIcon = new ImageIcon(getClass().getResource("/icons/trash.png"));
+                    Image img = deleteIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                    btnDelete.setIcon(new ImageIcon(img));
+                } catch (Exception e) {
+                    btnDelete.setText("×"); // Fallback text nếu không load được icon
+                }
+                
+                btnDelete.setBorderPainted(false);
+                btnDelete.setContentAreaFilled(false);
+                btnDelete.setFocusPainted(false);
+                btnDelete.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                btnDelete.setToolTipText("Xóa bình luận");
+                
+                // Thêm hover effect
+                btnDelete.addMouseListener(new MouseAdapter() {
+                    public void mouseEntered(MouseEvent e) {
+                        btnDelete.setContentAreaFilled(true);
+                        btnDelete.setBackground(new Color(255, 235, 235));
+                    }
+                    public void mouseExited(MouseEvent e) {
+                        btnDelete.setContentAreaFilled(false);
+                    }
+                });
+                
+                // Xử lý sự kiện xóa comment
+                btnDelete.addActionListener(e -> deleteComment(commentId));
+                
+                actionsPanel.add(btnDelete);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        panel.add(actionsPanel, BorderLayout.EAST);
         
         // Show replies button if has replies
         if (replyCount > 0) {
@@ -191,14 +243,6 @@ public class CommentsDialog extends JDialog {
             btnShowReplies.addActionListener(e -> toggleReplies(commentId, panel, indentLevel, btnShowReplies));
             panel.add(btnShowReplies, BorderLayout.SOUTH);
         }
-        
-        btnReply.addActionListener(e -> showReplyForm(commentId, panel));
-        
-        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        actionsPanel.setOpaque(false);
-        actionsPanel.add(btnReply);
-        
-        panel.add(actionsPanel, BorderLayout.EAST);
         
         return panel;
     }
@@ -500,5 +544,58 @@ public class CommentsDialog extends JDialog {
             e.printStackTrace();
         }
         return 0;
+    }
+    
+    // Thêm phương thức xóa comment
+    private void deleteComment(int commentId) {
+        int choice = JOptionPane.showConfirmDialog(
+            this,
+            "Bạn có chắc chắn muốn xóa bình luận này?",
+            "Xác nhận xóa",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+        
+        if (choice == JOptionPane.YES_OPTION) {
+            try {
+                // Xóa các reply của comment này trước
+                String deleteReplies = "DELETE FROM tbl_comment WHERE comment_id = ?";
+                PreparedStatement psReplies = connection.prepareStatement(deleteReplies);
+                psReplies.setInt(1, commentId);
+                psReplies.executeUpdate();
+                
+                // Sau đó xóa comment chính
+                String deleteComment = "DELETE FROM tbl_comment WHERE id = ? AND user_id = ?";
+                PreparedStatement psComment = connection.prepareStatement(deleteComment);
+                psComment.setInt(1, commentId);
+                psComment.setInt(2, userId);
+                
+                int result = psComment.executeUpdate();
+                if (result > 0) {
+                    // Refresh lại danh sách comments
+                    loadComments();
+                    
+                    // Cập nhật số lượng comment trong NewsFeed
+                    if (onCommentAdded != null) {
+                        onCommentAdded.run();
+                    }
+                    
+                    JOptionPane.showMessageDialog(
+                        this,
+                        "Xóa bình luận thành công!",
+                        "Thành công",
+                        JOptionPane.INFORMATION_MESSAGE
+                    );
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Lỗi khi xóa bình luận: " + e.getMessage(),
+                    "Lỗi",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            }
+        }
     }
 } 

@@ -7,78 +7,132 @@ import java.awt.event.*;
 import java.sql.*;
 import utils.DBConnection;
 
-public class AddPostDialog extends JDialog {
+public class HandlePostDialog extends JDialog {
     private Connection connection;
     private int userId;
-    private Runnable onPostAdded; // Callback khi thêm bài viết thành công
+    private Runnable onPostAdded;
+    private int postId;
+    private boolean isEditMode;
+    private JTextField txtTitle;
+    private JTextPane txtContent;
+    private JTextArea txtImageUrl;
+    private JLabel lblTitle;
+    private JLabel lblContent;
+    private JLabel lblImageUrl;
     
-    public AddPostDialog(JFrame parent, int userId, Runnable onPostAdded) {
+    public HandlePostDialog(JFrame parent, int userId, Runnable onPostAdded) {
         super(parent, "Tạo bài viết mới", true);
         this.userId = userId;
         this.onPostAdded = onPostAdded;
-        
+        this.isEditMode = false;
         initializeUI();
     }
     
+    public HandlePostDialog(JFrame parent, int userId, int postId, String title, 
+            String content, String imageUrl, Runnable onPostAdded) {
+        super(parent, "Chỉnh sửa bài viết", true);
+        this.userId = userId;
+        this.postId = postId;
+        this.onPostAdded = onPostAdded;
+        this.isEditMode = true;
+        
+        initializeUI();
+        
+        txtTitle.setText(title);
+        txtContent.setText(content);
+        txtImageUrl.setText(imageUrl != null ? imageUrl : "");
+    }
+    
     private void initializeUI() {
-        setSize(800, 600);
+        setSize(1000, 700);
         setLocationRelativeTo(null);
         
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JPanel mainContainer = new JPanel(new BorderLayout());
+        mainContainer.setBackground(new Color(245, 246, 247));
         
-        // Form panel
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(Color.WHITE);
+        headerPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(218, 220, 224)),
+            BorderFactory.createEmptyBorder(15, 25, 15, 25)
+        ));
+        
+        JLabel titleLabel = new JLabel("Tạo bài viết mới");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titleLabel.setForeground(new Color(32, 33, 36));
+        
+        headerPanel.add(titleLabel, BorderLayout.WEST);
+        
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 20));
+        contentPanel.setBackground(new Color(245, 246, 247));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(25, 25, 25, 25));
+        
         JPanel formPanel = new JPanel();
         formPanel.setLayout(new BoxLayout(formPanel, BoxLayout.Y_AXIS));
+        formPanel.setBackground(Color.WHITE);
+        formPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(218, 220, 224), 1),
+            BorderFactory.createEmptyBorder(20, 20, 20, 20)
+        ));
         
-        // Tiêu đề
-        JLabel lblTitle = new JLabel("Tiêu đề");
-        JTextField txtTitle = new JTextField(20);
-        txtTitle.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+        lblTitle = new JLabel("Tiêu đề");
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        txtTitle = new JTextField(20);
+        txtTitle.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        txtTitle.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(218, 220, 224), 1),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
         
-        // Nội dung với định dạng
-        JLabel lblContent = new JLabel("Nội dung");
-        JTextPane txtContent = new JTextPane();
+        lblContent = new JLabel("Nội dung");
+        lblContent.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        txtContent = new JTextPane();
         txtContent.setContentType("text/html");
+        txtContent.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         
-        // Toolbar cho định dạng văn bản
         JToolBar formatToolbar = createFormatToolbar(txtContent);
+        formatToolbar.setBackground(Color.WHITE);
+        formatToolbar.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(218, 220, 224), 1),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
         
-        // Panel chứa toolbar và editor
-        JPanel editorPanel = new JPanel(new BorderLayout());
+        JPanel editorPanel = new JPanel(new BorderLayout(0, 10));
+        editorPanel.setOpaque(false);
         editorPanel.add(formatToolbar, BorderLayout.NORTH);
-        editorPanel.add(new JScrollPane(txtContent), BorderLayout.CENTER);
         
-        // URL ảnh
-        JLabel lblImageUrl = new JLabel("URL ảnh");
-        JTextArea txtImageUrl = new JTextArea(4, 20);
+        JScrollPane scrollContent = new JScrollPane(txtContent);
+        scrollContent.setBorder(BorderFactory.createLineBorder(new Color(218, 220, 224), 1));
+        scrollContent.setPreferredSize(new Dimension(0, 300));
+        editorPanel.add(scrollContent, BorderLayout.CENTER);
+        
+        lblImageUrl = new JLabel("URL ảnh");
+        lblImageUrl.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        txtImageUrl = new JTextArea(4, 20);
+        txtImageUrl.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         txtImageUrl.setLineWrap(true);
         JScrollPane scrollImage = new JScrollPane(txtImageUrl);
+        scrollImage.setBorder(BorderFactory.createLineBorder(new Color(218, 220, 224), 1));
         
-        // Thêm các components vào form
-        formPanel.add(lblTitle);
-        formPanel.add(Box.createVerticalStrut(5));
-        formPanel.add(txtTitle);
-        formPanel.add(Box.createVerticalStrut(15));
+        formPanel.add(createFormGroup(lblTitle, txtTitle));
+        formPanel.add(Box.createVerticalStrut(20));
+        formPanel.add(createFormGroup(lblContent, editorPanel));
+        formPanel.add(Box.createVerticalStrut(20));
+        formPanel.add(createFormGroup(lblImageUrl, scrollImage));
         
-        formPanel.add(lblContent);
-        formPanel.add(Box.createVerticalStrut(5));
-        formPanel.add(editorPanel);
-        formPanel.add(Box.createVerticalStrut(15));
+        contentPanel.add(formPanel, BorderLayout.CENTER);
         
-        formPanel.add(lblImageUrl);
-        formPanel.add(Box.createVerticalStrut(5));
-        formPanel.add(scrollImage);
+        JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        footerPanel.setBackground(Color.WHITE);
+        footerPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(218, 220, 224)),
+            BorderFactory.createEmptyBorder(15, 25, 15, 25)
+        ));
         
-        // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        
-        JButton btnCancel = new JButton("Hủy");
-        styleButton(btnCancel, new Color(231, 76, 60));
+        JButton btnCancel = createButton("Hủy", new Color(218, 220, 224), Color.BLACK);
         btnCancel.addActionListener(e -> dispose());
         
-        JButton btnPost = new JButton("Đăng bài");
-        styleButton(btnPost, new Color(52, 152, 219));
+        JButton btnPost = createButton("Đăng bài", new Color(24, 119, 242), Color.WHITE);
         btnPost.addActionListener(e -> {
             if (savePost(txtTitle.getText().trim(), 
                         txtContent.getText().trim(), 
@@ -87,32 +141,60 @@ public class AddPostDialog extends JDialog {
             }
         });
         
-        buttonPanel.add(btnCancel);
-        buttonPanel.add(btnPost);
+        footerPanel.add(btnCancel);
+        footerPanel.add(btnPost);
         
-        mainPanel.add(formPanel, BorderLayout.CENTER);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        mainContainer.add(headerPanel, BorderLayout.NORTH);
+        mainContainer.add(contentPanel, BorderLayout.CENTER);
+        mainContainer.add(footerPanel, BorderLayout.SOUTH);
         
-        add(mainPanel);
+        setContentPane(mainContainer);
         setupKeyboardShortcuts(txtContent);
+    }
+    
+    private JPanel createFormGroup(JLabel label, JComponent field) {
+        JPanel panel = new JPanel(new BorderLayout(0, 10));
+        panel.setOpaque(false);
+        panel.add(label, BorderLayout.NORTH);
+        panel.add(field, BorderLayout.CENTER);
+        return panel;
+    }
+    
+    private JButton createButton(String text, Color bgColor, Color fgColor) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        button.setBackground(bgColor);
+        button.setForeground(fgColor);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setPreferredSize(new Dimension(120, 36));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        button.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(bgColor.darker());
+            }
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(bgColor);
+            }
+        });
+        
+        return button;
     }
     
     private JToolBar createFormatToolbar(JTextPane txtContent) {
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
         
-        // Các nút định dạng
         addFormatButton(toolbar, "B", "In đậm (Ctrl+B)", "bold", txtContent);
         addFormatButton(toolbar, "I", "In nghiêng (Ctrl+I)", "italic", txtContent);
         addFormatButton(toolbar, "U", "Gạch chân (Ctrl+U)", "underline", txtContent);
         toolbar.addSeparator();
         
-        // Nút danh sách
         addListButton(toolbar, "•", "Tạo danh sách", false, txtContent);
         addListButton(toolbar, "1.", "Tạo danh sách đánh số", true, txtContent);
         toolbar.addSeparator();
         
-        // Font size
         toolbar.add(new JLabel(" Cỡ chữ: "));
         String[] sizes = {"12", "14", "16", "18", "20", "24", "28", "32"};
         JComboBox<String> cbFontSize = new JComboBox<>(sizes);
@@ -146,7 +228,6 @@ public class AddPostDialog extends JDialog {
         InputMap inputMap = textPane.getInputMap();
         ActionMap actionMap = textPane.getActionMap();
         
-        // Ctrl+B cho in đậm
         KeyStroke boldKey = KeyStroke.getKeyStroke(KeyEvent.VK_B, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
         inputMap.put(boldKey, "bold-action");
         actionMap.put("bold-action", new AbstractAction() {
@@ -155,7 +236,6 @@ public class AddPostDialog extends JDialog {
             }
         });
         
-        // Ctrl+I cho in nghiêng
         KeyStroke italicKey = KeyStroke.getKeyStroke(KeyEvent.VK_I, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
         inputMap.put(italicKey, "italic-action");
         actionMap.put("italic-action", new AbstractAction() {
@@ -164,7 +244,6 @@ public class AddPostDialog extends JDialog {
             }
         });
         
-        // Ctrl+U cho gạch chân
         KeyStroke underlineKey = KeyStroke.getKeyStroke(KeyEvent.VK_U, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
         inputMap.put(underlineKey, "underline-action");
         actionMap.put("underline-action", new AbstractAction() {
@@ -285,39 +364,52 @@ public class AddPostDialog extends JDialog {
         
         try {
             connection = DBConnection.getConnection();
-            String query = "INSERT INTO tbl_post (user_id, title, content, hash_img) VALUES (?, ?, ?, ?)";
-            PreparedStatement ps = connection.prepareStatement(query);
-            ps.setInt(1, userId);
-            ps.setString(2, title);
+            String query;
+            PreparedStatement ps;
             
-            // Loại bỏ các thẻ HTML bao ngoài và khoảng trắng thừa
+            // Xử lý nội dung HTML trước khi lưu
             String cleanContent = content
-                .replaceAll("(?s)<head\\b[^>]*>.*?</head>", "") // Xóa toàn bộ phần head và nội dung bên trong
+                .replaceAll("(?s)<head\\b[^>]*>.*?</head>", "") // Xóa thẻ head và nội dung bên trong
                 .replaceAll("(?i)</?html[^>]*>", "") // Xóa thẻ html mở và đóng
                 .replaceAll("(?i)</?body[^>]*>", "") // Xóa thẻ body mở và đóng
                 .replaceAll("\\s+", " ") // Thay thế nhiều khoảng trắng bằng 1 khoảng trắng
                 .trim(); // Xóa khoảng trắng đầu và cuối
-                
-            ps.setString(3, cleanContent);
-            ps.setString(4, imageUrls);
-            ps.executeUpdate();
             
-            // Gọi callback để refresh danh sách bài viết
-            if (onPostAdded != null) {
-                onPostAdded.run();
+            if (isEditMode) {
+                query = "UPDATE tbl_post SET title = ?, content = ?, hash_img = ? WHERE id = ? AND user_id = ?";
+                ps = connection.prepareStatement(query);
+                ps.setString(1, title);
+                ps.setString(2, cleanContent);
+                ps.setString(3, imageUrls.isEmpty() ? null : imageUrls);
+                ps.setInt(4, postId);
+                ps.setInt(5, userId);
+            } else {
+                query = "INSERT INTO tbl_post (user_id, title, content, hash_img) VALUES (?, ?, ?, ?)";
+                ps = connection.prepareStatement(query);
+                ps.setInt(1, userId);
+                ps.setString(2, title);
+                ps.setString(3, cleanContent);
+                ps.setString(4, imageUrls.isEmpty() ? null : imageUrls);
             }
             
-            JOptionPane.showMessageDialog(this,
-                "Đăng bài thành công!",
-                "Thông báo",
-                JOptionPane.INFORMATION_MESSAGE);
-                
-            return true;
+            int result = ps.executeUpdate();
+            if (result > 0) {
+                JOptionPane.showMessageDialog(this,
+                    isEditMode ? "Cập nhật bài viết thành công!" : "Đăng bài thành công!",
+                    "Thông báo",
+                    JOptionPane.INFORMATION_MESSAGE);
+                    
+                if (onPostAdded != null) {
+                    onPostAdded.run();
+                }
+                return true;
+            }
+            return false;
             
         } catch (SQLException ex) {
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Lỗi khi đăng bài: " + ex.getMessage(),
+                "Lỗi khi " + (isEditMode ? "cập nhật" : "đăng") + " bài: " + ex.getMessage(),
                 "Lỗi",
                 JOptionPane.ERROR_MESSAGE);
             return false;

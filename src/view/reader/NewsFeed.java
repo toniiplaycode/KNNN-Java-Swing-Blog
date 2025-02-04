@@ -23,6 +23,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.awt.geom.Ellipse2D;
 import java.util.prefs.Preferences;
+import view.reader.HandlePostDialog;
 
 public class NewsFeed extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -34,6 +35,7 @@ public class NewsFeed extends JFrame {
     private ImageIcon likeIcon, commentIcon;
     private static final int COMMENT_PREVIEW_LINES = 2; // Số dòng hiển thị khi thu nhỏ
     private JButton btnScrollTop;
+    private JTextField txtSearch;
     
     public NewsFeed(int userId) {
         this.userId = userId;
@@ -156,50 +158,71 @@ public class NewsFeed extends JFrame {
         }
         
         // Search panel
-        JPanel searchPanel = new JPanel(new BorderLayout(5, 0));
-        searchPanel.setOpaque(false);
-        searchPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 20));
+        JPanel searchPanel = new JPanel(new BorderLayout(10, 0));
+        searchPanel.setBackground(Color.WHITE);
+        searchPanel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(218, 220, 224)),
+            BorderFactory.createEmptyBorder(0, 0, 0, 0)
+        ));
         
-        // Search field
-        JTextField searchField = new JTextField();
-        searchField.setPreferredSize(new Dimension(0, 35));
+        txtSearch = new JTextField();
+        txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        txtSearch.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(218, 220, 224), 1),
+            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+        ));
+        txtSearch.setPreferredSize(new Dimension(300, 36));
+        
         // Placeholder text
-        searchField.setText("Tìm kiếm bài viết...");
-        searchField.setForeground(Color.GRAY);
-        searchField.addFocusListener(new FocusAdapter() {
+        txtSearch.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
-                if (searchField.getText().equals("Tìm kiếm bài viết...")) {
-                    searchField.setText("");
-                    searchField.setForeground(Color.BLACK);
+                if (txtSearch.getText().equals("Tìm kiếm bài viết...")) {
+                    txtSearch.setText("");
+                    txtSearch.setForeground(Color.BLACK);
                 }
             }
             
             @Override
             public void focusLost(FocusEvent e) {
-                if (searchField.getText().isEmpty()) {
-                    searchField.setText("Tìm kiếm bài viết...");
-                    searchField.setForeground(Color.GRAY);
+                if (txtSearch.getText().isEmpty()) {
+                    txtSearch.setText("Tìm kiếm bài viết...");
+                    txtSearch.setForeground(Color.GRAY);
                 }
             }
         });
         
-        // Search button
-        JButton btnSearch = new JButton("Tìm kiếm");
-        styleButton(btnSearch, new Color(52, 152, 219));
-        
-        // Add Enter key listener
-        searchField.addKeyListener(new KeyAdapter() {
+        // Xử lý sự kiện tìm kiếm khi nhấn Enter
+        txtSearch.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    btnSearch.doClick();
+                    searchPosts(txtSearch.getText());
                 }
             }
         });
         
-        searchPanel.add(searchField, BorderLayout.CENTER);
-        searchPanel.add(btnSearch, BorderLayout.EAST);
+        // Nút tìm kiếm
+        JButton btnSearch = new JButton();
+        try {
+            ImageIcon searchIcon = new ImageIcon(getClass().getResource("/icons/search.png"));
+            Image img = searchIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+            btnSearch.setIcon(new ImageIcon(img));
+        } catch (Exception e) {
+            btnSearch.setText("🔍"); // Fallback text
+        }
+        btnSearch.setBorderPainted(false);
+        btnSearch.setContentAreaFilled(false);
+        btnSearch.setFocusPainted(false);
+        btnSearch.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSearch.addActionListener(e -> searchPosts(txtSearch.getText()));
+        
+        JPanel searchInputPanel = new JPanel(new BorderLayout());
+        searchInputPanel.setOpaque(false);
+        searchInputPanel.add(txtSearch, BorderLayout.CENTER);
+        searchInputPanel.add(btnSearch, BorderLayout.EAST);
+        
+        searchPanel.add(searchInputPanel, BorderLayout.CENTER);
         
         // Action buttons panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -218,7 +241,7 @@ public class NewsFeed extends JFrame {
         // Add Post button
         JButton btnAddPost = createHeaderButton("Bài viết mới", "/icons/edit.png");
         btnAddPost.addActionListener(e -> {
-            AddPostDialog dialog = new AddPostDialog(
+            HandlePostDialog dialog = new HandlePostDialog(
                 (JFrame) SwingUtilities.getWindowAncestor(this),
                 userId,
                 () -> loadPosts()
@@ -339,9 +362,9 @@ public class NewsFeed extends JFrame {
         }
     }
     
-    private JPanel createPostPanel(int postId, String username, String title, String content, 
-            Timestamp postDate, int likeCount, int commentCount, boolean userLiked,
-            String hashImg, String avatar) {
+    private JPanel createPostPanel(int postId, String username, String title, String content,
+            Timestamp postDate, int likeCount, int commentCount, boolean userLiked, 
+            String imageUrls, String avatar) {
         
         JPanel postPanel = new JPanel(new BorderLayout(10, 10));
         postPanel.setBackground(Color.WHITE);
@@ -387,7 +410,7 @@ public class NewsFeed extends JFrame {
         JPanel deletePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         deletePanel.setOpaque(false);
         
-        // Kiểm tra xem post có phải của user hiện tại không
+        // Thêm kiểm tra xem post có phải của user hiện tại không
         try {
             connection = DBConnection.getConnection();
             String query = "SELECT user_id FROM tbl_post WHERE id = ?";
@@ -396,20 +419,65 @@ public class NewsFeed extends JFrame {
             ResultSet rs = ps.executeQuery();
             
             if (rs.next() && rs.getInt("user_id") == userId) {
-                // Tạo nút delete với icon
-                JButton btnDelete = new JButton();
-                ImageIcon deleteIcon = new ImageIcon(getClass().getResource("/icons/trash.png"));
-                Image img = deleteIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
-                btnDelete.setIcon(new ImageIcon(img));
+                // Panel chứa các nút action
+                JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+                actionPanel.setOpaque(false);
                 
-                // Style cho nút delete
+                // Nút Edit
+                JButton btnEdit = new JButton();
+                try {
+                    ImageIcon editIcon = new ImageIcon(getClass().getResource("/icons/edit.png"));
+                    Image img = editIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                    btnEdit.setIcon(new ImageIcon(img));
+                } catch (Exception e) {
+                    btnEdit.setText("✎"); // Fallback text nếu không load được icon
+                }
+                
+                btnEdit.setBorderPainted(false);
+                btnEdit.setContentAreaFilled(false);
+                btnEdit.setFocusPainted(false);
+                btnEdit.setCursor(new Cursor(Cursor.HAND_CURSOR));
+                btnEdit.setToolTipText("Chỉnh sửa bài viết");
+                
+                btnEdit.addMouseListener(new MouseAdapter() {
+                    public void mouseEntered(MouseEvent e) {
+                        btnEdit.setContentAreaFilled(true);
+                        btnEdit.setBackground(new Color(240, 240, 240));
+                    }
+                    public void mouseExited(MouseEvent e) {
+                        btnEdit.setContentAreaFilled(false);
+                    }
+                });
+                
+                btnEdit.addActionListener(e -> {
+                    HandlePostDialog dialog = new HandlePostDialog(
+                        (JFrame) SwingUtilities.getWindowAncestor(this),
+                        userId,
+                        postId,
+                        title,
+                        content,
+                        imageUrls,
+                        () -> loadPosts()
+                    );
+                    dialog.setVisible(true);
+                });
+                
+                // Nút Delete
+                JButton btnDelete = new JButton();
+                try {
+                    ImageIcon deleteIcon = new ImageIcon(getClass().getResource("/icons/trash.png"));
+                    Image img = deleteIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                    btnDelete.setIcon(new ImageIcon(img));
+                } catch (Exception e) {
+                    btnDelete.setText("×"); // Fallback text nếu không load được icon
+                }
+                
                 btnDelete.setBorderPainted(false);
                 btnDelete.setContentAreaFilled(false);
                 btnDelete.setFocusPainted(false);
                 btnDelete.setCursor(new Cursor(Cursor.HAND_CURSOR));
-                btnDelete.setToolTipText("Delete post");
+                btnDelete.setToolTipText("Xóa bài viết");
                 
-                // Thêm hover effect
                 btnDelete.addMouseListener(new MouseAdapter() {
                     public void mouseEntered(MouseEvent e) {
                         btnDelete.setContentAreaFilled(true);
@@ -420,13 +488,15 @@ public class NewsFeed extends JFrame {
                     }
                 });
                 
-                // Xử lý sự kiện click delete
-                btnDelete.addActionListener(e -> {
-                    deletePost(postId);
-                });
+                btnDelete.addActionListener(e -> deletePost(postId));
                 
-                deletePanel.add(btnDelete);
+                // Thêm các nút vào panel
+                actionPanel.add(btnEdit);
+                actionPanel.add(btnDelete);
+                deletePanel.add(actionPanel);
             }
+            rs.close();
+            ps.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -459,9 +529,9 @@ public class NewsFeed extends JFrame {
         contentPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
         
         // Hiển thị ảnh từ hash_img
-        if (hashImg != null && !hashImg.trim().isEmpty()) {
-            String[] imageUrls = hashImg.split("\n");
-            for (String imageUrl : imageUrls) {
+        if (imageUrls != null && !imageUrls.trim().isEmpty()) {
+            String[] imageUrlArray = imageUrls.split("\n");
+            for (String imageUrl : imageUrlArray) {
                 if (!imageUrl.trim().isEmpty()) {
                     try {
                         // Tạo panel cho ảnh
@@ -678,12 +748,12 @@ public class NewsFeed extends JFrame {
     }
     
     private void createNewPost() {
-        AddPostDialog dialog = new AddPostDialog(
+        HandlePostDialog dialog = new HandlePostDialog(
             (JFrame) SwingUtilities.getWindowAncestor(this),
             userId,
             () -> {
-                loadPosts(); // Refresh posts
-                scrollToTop(); // Scroll lên trên sau khi refresh
+                loadPosts();
+                scrollToTop();
             }
         );
         dialog.setVisible(true);
@@ -691,7 +761,7 @@ public class NewsFeed extends JFrame {
     
     private void logout() {
         int choice = JOptionPane.showConfirmDialog(
-            SwingUtilities.getWindowAncestor(this),
+            this,
             "Bạn có chắc chắn muốn đăng xuất?",
             "Xác nhận đăng xuất",
             JOptionPane.YES_NO_OPTION,
@@ -699,31 +769,21 @@ public class NewsFeed extends JFrame {
         );
         
         if (choice == JOptionPane.YES_OPTION) {
-            // Xóa thông tin đăng nhập đã lưu
+            // Xóa thông tin đăng nhập đã lưu (nếu có)
             Preferences prefs = Preferences.userRoot();
             prefs.remove("reader_email");
             prefs.remove("reader_password");
             
-            // Hiển thị thông báo
-            JOptionPane.showMessageDialog(
-                SwingUtilities.getWindowAncestor(this),
-                "Đăng xuất thành công!",
-                "Thông báo",
-                JOptionPane.INFORMATION_MESSAGE
-            );
-            
-            // Lấy frame hiện tại
+            // Đóng frame NewsFeed hiện tại
             Window window = SwingUtilities.getWindowAncestor(this);
-            
-            // Đóng frame NewsFeed
             if (window instanceof JFrame) {
                 window.dispose();
-                
-                // Mở SignIn sau khi đã đóng NewsFeed
-                SwingUtilities.invokeLater(() -> {
-                    new SignIn().setVisible(true);
-                });
             }
+            
+            // Mở SignIn frame
+            SwingUtilities.invokeLater(() -> {
+                new SignIn().setVisible(true);
+            });
         }
     }
     
@@ -1064,37 +1124,47 @@ public class NewsFeed extends JFrame {
         }
     }
     
-    private void searchPosts(String searchText) {
-        mainPanel.removeAll();
-        
-        // Thêm panel căn giữa để chứa tất cả posts
-        JPanel centerPanel = new JPanel();
-        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
-        centerPanel.setOpaque(false);
+    private void searchPosts(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty() || 
+            keyword.equals("Tìm kiếm bài viết...")) {
+            loadPosts(); // Load lại tất cả bài viết nếu không có từ khóa
+            return;
+        }
         
         try {
             connection = DBConnection.getConnection();
             String query = """
-                SELECT p.*, u.username, u.avatar,
+                SELECT p.id, u.username, p.title, p.content, p.create_at as post_date,
+                    u.avatar, p.hash_img,
                     (SELECT COUNT(*) FROM tbl_like WHERE post_id = p.id) as like_count,
                     (SELECT COUNT(*) FROM tbl_comment WHERE post_id = p.id) as comment_count,
-                    EXISTS(SELECT 1 FROM tbl_like WHERE post_id = p.id AND user_id = ?) as user_liked,
-                    COALESCE(p.create_at, CURRENT_TIMESTAMP) as post_date,
-                    p.hash_img
+                    EXISTS(SELECT 1 FROM tbl_like WHERE post_id = p.id AND user_id = ?) as user_liked
                 FROM tbl_post p 
                 JOIN tbl_user u ON p.user_id = u.id 
-                WHERE p.title LIKE ? OR p.content LIKE ?
+                WHERE LOWER(p.title) LIKE ? OR LOWER(p.content) LIKE ?
                 ORDER BY post_date DESC
             """;
             
             PreparedStatement ps = connection.prepareStatement(query);
             ps.setInt(1, userId);
-            String searchPattern = "%" + searchText + "%";
+            String searchPattern = "%" + keyword.toLowerCase() + "%";
             ps.setString(2, searchPattern);
             ps.setString(3, searchPattern);
+            
             ResultSet rs = ps.executeQuery();
             
+            // Xóa các bài viết hiện tại
+            mainPanel.removeAll();
+            
+            // Panel chứa các bài viết
+            JPanel centerPanel = new JPanel();
+            centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+            centerPanel.setOpaque(false);
+            
+            boolean hasResults = false;
+            
             while (rs.next()) {
+                hasResults = true;
                 JPanel postPanel = createPostPanel(
                     rs.getInt("id"),
                     rs.getString("username"),
@@ -1118,14 +1188,18 @@ public class NewsFeed extends JFrame {
                 centerPanel.add(Box.createVerticalStrut(10));
             }
             
-            if (centerPanel.getComponentCount() == 0) {
-                // Không tìm thấy kết quả
-                JLabel noResultLabel = new JLabel("Không tìm thấy bài viết nào phù hợp");
-                noResultLabel.setFont(new Font("Segoe UI", Font.ITALIC, 14));
-                noResultLabel.setForeground(Color.GRAY);
-                noResultLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                centerPanel.add(Box.createVerticalStrut(50));
-                centerPanel.add(noResultLabel);
+            if (!hasResults) {
+                // Hiển thị thông báo không tìm thấy kết quả
+                JPanel noResultPanel = new JPanel(new BorderLayout());
+                noResultPanel.setOpaque(false);
+                noResultPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
+                
+                JLabel lblNoResult = new JLabel("Không tìm thấy bài viết nào phù hợp", SwingConstants.CENTER);
+                lblNoResult.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+                lblNoResult.setForeground(Color.GRAY);
+                
+                noResultPanel.add(lblNoResult, BorderLayout.CENTER);
+                centerPanel.add(noResultPanel);
             }
             
             mainPanel.add(centerPanel);
