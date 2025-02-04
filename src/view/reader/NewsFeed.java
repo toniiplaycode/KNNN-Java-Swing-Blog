@@ -36,6 +36,7 @@ public class NewsFeed extends JFrame {
     private static final int COMMENT_PREVIEW_LINES = 2; // Số dòng hiển thị khi thu nhỏ
     private JButton btnScrollTop;
     private JTextField txtSearch;
+    private JComboBox<CategoryItem> cboCategory;
     
     public NewsFeed(int userId) {
         this.userId = userId;
@@ -160,16 +161,13 @@ public class NewsFeed extends JFrame {
         // Search panel
         JPanel searchPanel = new JPanel(new BorderLayout(10, 0));
         searchPanel.setBackground(Color.WHITE);
-        searchPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(218, 220, 224)),
-            BorderFactory.createEmptyBorder(0, 0, 0, 0)
-        ));
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 10, 20));
         
         txtSearch = new JTextField();
         txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         txtSearch.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(new Color(218, 220, 224), 1),
-            BorderFactory.createEmptyBorder(8, 12, 8, 12)
+            BorderFactory.createEmptyBorder(0, 0, 0, 0)
         ));
         txtSearch.setPreferredSize(new Dimension(300, 36));
         
@@ -223,6 +221,10 @@ public class NewsFeed extends JFrame {
         searchInputPanel.add(btnSearch, BorderLayout.EAST);
         
         searchPanel.add(searchInputPanel, BorderLayout.CENTER);
+        
+        // Filter panel
+        JPanel filterPanel = createFilterPanel();
+        searchPanel.add(filterPanel, BorderLayout.EAST);
         
         // Action buttons panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -609,6 +611,10 @@ public class NewsFeed extends JFrame {
 
         contentPanel.add(textPane);
         
+        // Thêm categories vào phía dưới content
+        contentPanel.add(Box.createVerticalStrut(10));
+        contentPanel.add(createCategoryPanel(postId));
+        
         // Actions panel
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 15, 0));
         actionsPanel.setOpaque(false);
@@ -690,10 +696,27 @@ public class NewsFeed extends JFrame {
         
         btnShowComments.addActionListener(e -> showCommentsDialog(postId, title));
         
+        // Thêm nút Xem
+        JButton btnView = new JButton("Xem blog cá nhân");
+        btnView.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        btnView.setForeground(new Color(24, 119, 242));
+        btnView.setBorderPainted(false);
+        btnView.setContentAreaFilled(false);
+        btnView.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Thêm icon cho nút
+        ImageIcon viewIcon = new ImageIcon(getClass().getResource("/icons/user-blog.png"));
+        Image viewImg = viewIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+        btnView.setIcon(new ImageIcon(viewImg));
+        btnView.setIconTextGap(5); // Khoảng cách giữa icon và text
+
+        btnView.addActionListener(e -> viewUserPosts(getUserIdByUsername(username), username));
+        
         // Add components to actions panel
         actionsPanel.add(likePanel);
         actionsPanel.add(Box.createHorizontalStrut(20));
         actionsPanel.add(btnShowComments);
+        actionsPanel.add(btnView);
         
         // Add all components
         postPanel.add(topPanel, BorderLayout.NORTH);
@@ -1030,8 +1053,7 @@ public class NewsFeed extends JFrame {
         return avatarLabel;
     }
     
-    // Thêm phương thức scrollToTop
-    private void scrollToTop() {
+    public void scrollToTop() {
         SwingUtilities.invokeLater(() -> {
             JScrollBar verticalBar = scrollPane.getVerticalScrollBar();
             // Scroll với animation
@@ -1252,6 +1274,401 @@ public class NewsFeed extends JFrame {
         });
         
         return button;
+    }
+    
+    private JPanel createFilterPanel() {
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        filterPanel.setOpaque(false);
+        
+        // Combobox thể loại
+        cboCategory = new JComboBox<>();
+        cboCategory.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        cboCategory.setPreferredSize(new Dimension(150, 36));
+        
+        // Thêm item "Tất cả thể loại"
+        cboCategory.addItem(new CategoryItem(0, "Tất cả thể loại"));
+        
+        // Load categories từ database
+        try {
+            connection = DBConnection.getConnection();
+            String query = "SELECT id, title FROM tbl_category ORDER BY title";
+            PreparedStatement ps = connection.prepareStatement(query);
+            ResultSet rs = ps.executeQuery();
+            
+            while (rs.next()) {
+                cboCategory.addItem(new CategoryItem(
+                    rs.getInt("id"),
+                    rs.getString("title")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        // Xử lý sự kiện khi chọn category
+        cboCategory.addActionListener(e -> {
+            CategoryItem selected = (CategoryItem) cboCategory.getSelectedItem();
+            if (selected != null) {
+                filterPostsByCategory(selected.getId());
+            }
+        });
+        
+        filterPanel.add(cboCategory);
+        return filterPanel;
+    }
+    
+    private void filterPostsByCategory(int categoryId) {
+        if (categoryId == 0) {
+            loadPosts(); // Load tất cả bài viết
+            return;
+        }
+        
+        try {
+            connection = DBConnection.getConnection();
+            String query = """
+                SELECT p.*, u.username, u.avatar,
+                    (SELECT COUNT(*) FROM tbl_like WHERE post_id = p.id) as like_count,
+                    (SELECT COUNT(*) FROM tbl_comment WHERE post_id = p.id) as comment_count,
+                    EXISTS(SELECT 1 FROM tbl_like WHERE post_id = p.id AND user_id = ?) as user_liked,
+                    COALESCE(p.create_at, CURRENT_TIMESTAMP) as post_date
+                FROM tbl_post p 
+                JOIN tbl_user u ON p.user_id = u.id
+                JOIN tbl_post_category pc ON p.id = pc.post_id
+                WHERE pc.category_id = ?
+                ORDER BY post_date DESC
+            """;
+            
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setInt(1, userId);
+            ps.setInt(2, categoryId);
+            ResultSet rs = ps.executeQuery();
+            
+            // Xóa các bài viết hiện tại
+            mainPanel.removeAll();
+            
+            // Panel chứa các bài viết
+            JPanel centerPanel = new JPanel();
+            centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+            centerPanel.setOpaque(false);
+            
+            boolean hasResults = false;
+            
+            while (rs.next()) {
+                hasResults = true;
+                JPanel postPanel = createPostPanel(
+                    rs.getInt("id"),
+                    rs.getString("username"),
+                    rs.getString("title"),
+                    rs.getString("content"),
+                    rs.getTimestamp("post_date"),
+                    rs.getInt("like_count"),
+                    rs.getInt("comment_count"),
+                    rs.getBoolean("user_liked"),
+                    rs.getString("hash_img"),
+                    rs.getString("avatar")
+                );
+                
+                // Wrap postPanel trong một panel căn giữa
+                JPanel wrapperPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+                wrapperPanel.setOpaque(false);
+                postPanel.setPreferredSize(new Dimension(500, postPanel.getPreferredSize().height));
+                wrapperPanel.add(postPanel);
+                
+                centerPanel.add(wrapperPanel);
+                centerPanel.add(Box.createVerticalStrut(10));
+            }
+            
+            if (!hasResults) {
+                // Hiển thị thông báo không tìm thấy kết quả
+                JPanel noResultPanel = new JPanel(new BorderLayout());
+                noResultPanel.setOpaque(false);
+                noResultPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
+                
+                JLabel lblNoResult = new JLabel("Không có bài viết nào trong thể loại này", SwingConstants.CENTER);
+                lblNoResult.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+                lblNoResult.setForeground(Color.GRAY);
+                
+                noResultPanel.add(lblNoResult, BorderLayout.CENTER);
+                centerPanel.add(noResultPanel);
+            }
+            
+            mainPanel.add(centerPanel);
+            mainPanel.revalidate();
+            mainPanel.repaint();
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Lỗi khi lọc bài viết: " + e.getMessage(),
+                "Lỗi",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    private class CategoryItem {
+        private int id;
+        private String title;
+        
+        public CategoryItem(int id, String title) {
+            this.id = id;
+            this.title = title;
+        }
+        
+        public int getId() { return id; }
+        public String getTitle() { return title; }
+        
+        @Override
+        public String toString() {
+            return title;
+        }
+    }
+    
+    // Thêm phương thức để lấy categories của một post
+    private JPanel createCategoryPanel(int postId) {
+        JPanel categoryPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        categoryPanel.setOpaque(false);
+        
+        try {
+            connection = DBConnection.getConnection();
+            String query = """
+                SELECT c.title 
+                FROM tbl_category c 
+                JOIN tbl_post_category pc ON c.id = pc.category_id 
+                WHERE pc.post_id = ?
+                ORDER BY c.title
+            """;
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setInt(1, postId);
+            ResultSet rs = ps.executeQuery();
+            
+            while (rs.next()) {
+                JLabel lblCategory = new JLabel("#" + rs.getString("title"));
+                lblCategory.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                lblCategory.setForeground(new Color(24, 119, 242)); // Màu xanh Facebook
+                categoryPanel.add(lblCategory);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        
+        return categoryPanel;
+    }
+    
+    // Thêm phương thức để lấy userId từ username
+    private int getUserIdByUsername(String username) {
+        try {
+            connection = DBConnection.getConnection();
+            String query = "SELECT id FROM tbl_user WHERE username = ?";
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setString(1, username);
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getInt("id");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+    
+    // Thêm phương thức để xem bài viết của một người dùng cụ thể
+    private void viewUserPosts(int authorId, String authorName) {
+        try {
+            connection = DBConnection.getConnection();
+            String query = """
+                SELECT p.*, u.username, u.avatar,
+                    (SELECT COUNT(*) FROM tbl_like l WHERE l.post_id = p.id) as like_count,
+                    (SELECT COUNT(*) FROM tbl_comment c WHERE c.post_id = p.id) as comment_count,
+                    EXISTS(SELECT 1 FROM tbl_like l WHERE l.post_id = p.id AND l.user_id = ?) as user_liked
+                FROM tbl_post p 
+                JOIN tbl_user u ON p.user_id = u.id
+                WHERE p.user_id = ?
+                ORDER BY p.create_at DESC
+            """;
+            
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setInt(1, userId);
+            ps.setInt(2, authorId);
+            ResultSet rs = ps.executeQuery();
+            
+            // Xóa các bài viết hiện tại
+            mainPanel.removeAll();
+            
+            // Thêm tiêu đề
+            JPanel headerPanel = new JPanel(new BorderLayout());
+            headerPanel.setBackground(Color.WHITE);
+            headerPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+            
+            // Panel cho nút quay lại (bên trái)
+            JPanel backPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            backPanel.setOpaque(false);
+            JButton btnBack = new JButton("← Quay lại");
+            btnBack.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+            btnBack.setForeground(new Color(24, 119, 242));
+            btnBack.setBorderPainted(false);
+            btnBack.setContentAreaFilled(false);
+            btnBack.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btnBack.addActionListener(e -> loadPosts());
+            backPanel.add(btnBack);
+            
+            // Panel chứa tiêu đề và thống kê (ở giữa)
+            JPanel headerCenterPanel = new JPanel(new BorderLayout());
+            headerCenterPanel.setOpaque(false);
+            
+            // Tiêu đề
+            JLabel lblTitle = new JLabel("Bài viết của " + authorName, SwingConstants.CENTER);
+            lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
+            
+            // Panel thống kê
+            JPanel statsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+            statsPanel.setOpaque(false);
+            
+            // Lấy thống kê từ database
+            String statsQuery = """
+                SELECT 
+                    COUNT(DISTINCT p.id) as total_posts,
+                    (SELECT COUNT(*) FROM tbl_like WHERE post_id IN (SELECT id FROM tbl_post WHERE user_id = ?)) as total_likes,
+                    (SELECT COUNT(*) FROM tbl_comment WHERE post_id IN (SELECT id FROM tbl_post WHERE user_id = ?)) as total_comments
+                FROM tbl_post p
+                WHERE p.user_id = ?
+            """;
+
+            PreparedStatement statsPs = connection.prepareStatement(statsQuery);
+            statsPs.setInt(1, authorId); // Cho subquery likes
+            statsPs.setInt(2, authorId); // Cho subquery comments  
+            statsPs.setInt(3, authorId); // Cho FROM clause
+            ResultSet statsRs = statsPs.executeQuery();
+
+            if (statsRs.next()) {
+                // Tổng số bài viết
+                JPanel postStatsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+                postStatsPanel.setOpaque(false);
+                ImageIcon postIcon = new ImageIcon(getClass().getResource("/icons/blogs.png"));
+                Image postImg = postIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                JLabel lblPostIcon = new JLabel(new ImageIcon(postImg));
+                JLabel lblPostCount = new JLabel(statsRs.getInt("total_posts") + " bài viết");
+                lblPostCount.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+                lblPostCount.setForeground(new Color(100, 100, 100));
+                postStatsPanel.add(lblPostIcon);
+                postStatsPanel.add(lblPostCount);
+                
+                // Tổng số lượt thích
+                JPanel likeStatsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+                likeStatsPanel.setOpaque(false);
+                ImageIcon likeIcon = new ImageIcon(getClass().getResource("/icons/like.png"));
+                Image likeImg = likeIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                JLabel lblLikeIcon = new JLabel(new ImageIcon(likeImg));
+                JLabel lblLikeCount = new JLabel(statsRs.getInt("total_likes") + " lượt thích");
+                lblLikeCount.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+                lblLikeCount.setForeground(new Color(100, 100, 100));
+                likeStatsPanel.add(lblLikeIcon);
+                likeStatsPanel.add(lblLikeCount);
+                
+                // Tổng số bình luận
+                JPanel commentStatsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+                commentStatsPanel.setOpaque(false);
+                ImageIcon commentIcon = new ImageIcon(getClass().getResource("/icons/comment.png"));
+                Image commentImg = commentIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+                JLabel lblCommentIcon = new JLabel(new ImageIcon(commentImg));
+                JLabel lblCommentCount = new JLabel(statsRs.getInt("total_comments") + " bình luận");
+                lblCommentCount.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+                lblCommentCount.setForeground(new Color(100, 100, 100));
+                commentStatsPanel.add(lblCommentIcon);
+                commentStatsPanel.add(lblCommentCount);
+                
+                // Thêm vào statsPanel với separator
+                statsPanel.add(postStatsPanel);
+                statsPanel.add(new JSeparator(JSeparator.VERTICAL) {
+                    {
+                        setPreferredSize(new Dimension(1, 14));
+                        setForeground(new Color(200, 200, 200));
+                    }
+                });
+                statsPanel.add(likeStatsPanel);
+                statsPanel.add(new JSeparator(JSeparator.VERTICAL) {
+                    {
+                        setPreferredSize(new Dimension(1, 14));
+                        setForeground(new Color(200, 200, 200));
+                    }
+                });
+                statsPanel.add(commentStatsPanel);
+            }
+
+            // Tạo panel mới để chứa title và stats
+            JPanel titleAndStatsPanel = new JPanel(new BorderLayout());
+            titleAndStatsPanel.setOpaque(false);
+            titleAndStatsPanel.add(lblTitle, BorderLayout.NORTH);
+            titleAndStatsPanel.add(statsPanel, BorderLayout.CENTER);
+            
+            // Thêm padding cho titleAndStatsPanel
+            titleAndStatsPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, btnBack.getPreferredSize().width));
+            
+            // Thêm các panel vào headerPanel
+            headerPanel.add(backPanel, BorderLayout.WEST);
+            headerPanel.add(titleAndStatsPanel, BorderLayout.CENTER);
+            
+            // Panel chứa các bài viết
+            JPanel centerPanel = new JPanel();
+            centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+            centerPanel.setOpaque(false);
+            
+            boolean hasResults = false;
+            
+            while (rs.next()) {
+                hasResults = true;
+                JPanel postPanel = createPostPanel(
+                    rs.getInt("id"),
+                    rs.getString("username"),
+                    rs.getString("title"),
+                    rs.getString("content"),
+                    rs.getTimestamp("create_at"),
+                    rs.getInt("like_count"),
+                    rs.getInt("comment_count"),
+                    rs.getBoolean("user_liked"),
+                    rs.getString("hash_img"),
+                    rs.getString("avatar")
+                );
+                
+                // Wrap postPanel trong một panel căn giữa
+                JPanel wrapperPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+                wrapperPanel.setOpaque(false);
+                postPanel.setPreferredSize(new Dimension(500, postPanel.getPreferredSize().height));
+                wrapperPanel.add(postPanel);
+                
+                centerPanel.add(wrapperPanel);
+                centerPanel.add(Box.createVerticalStrut(10));
+            }
+            
+            if (!hasResults) {
+                // Hiển thị thông báo không có bài viết
+                JPanel noResultPanel = new JPanel(new BorderLayout());
+                noResultPanel.setOpaque(false);
+                noResultPanel.setBorder(new EmptyBorder(20, 0, 0, 0));
+                
+                JLabel lblNoResult = new JLabel("Không có bài viết nào", SwingConstants.CENTER);
+                lblNoResult.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+                lblNoResult.setForeground(Color.GRAY);
+                
+                noResultPanel.add(lblNoResult, BorderLayout.CENTER);
+                centerPanel.add(noResultPanel);
+            }
+            
+            mainPanel.add(headerPanel, BorderLayout.NORTH);
+            mainPanel.add(centerPanel, BorderLayout.CENTER);
+            mainPanel.revalidate();
+            mainPanel.repaint();
+            
+            // Scroll to top
+            scrollToTop();
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Lỗi khi tải bài viết: " + e.getMessage(),
+                "Lỗi",
+                JOptionPane.ERROR_MESSAGE);
+        }
     }
 } 
 

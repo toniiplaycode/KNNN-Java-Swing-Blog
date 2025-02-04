@@ -29,7 +29,7 @@ public class StatisticsBlog extends JPanel {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
                 "Error connecting to database: " + e.getMessage(),
-                "Database Error",
+                "Lỗi cơ sở dữ liệu",
                 JOptionPane.ERROR_MESSAGE);
         }
         
@@ -50,11 +50,11 @@ public class StatisticsBlog extends JPanel {
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
         
         // Card tổng số người dùng
-        JPanel usersCard = createStatCard("Total Users", "users.png");
+        JPanel usersCard = createStatCard("Tổng người dùng", "users.png");
         lblTotalUsers = (JLabel) usersCard.getComponent(1);
         
         // Card tổng số bài viết
-        JPanel blogsCard = createStatCard("Total Blogs", "blogs.png");
+        JPanel blogsCard = createStatCard("Tổng bài viết", "blogs.png");
         lblTotalBlogs = (JLabel) blogsCard.getComponent(1);
         
         panel.add(usersCard);
@@ -91,17 +91,17 @@ public class StatisticsBlog extends JPanel {
         // Biểu đồ cột cho số bài viết theo user
         JFreeChart barChart = createBarChart();
         ChartPanel barChartPanel = new ChartPanel(barChart);
-        barChartPanel.setBorder(BorderFactory.createTitledBorder("Posts by User"));
+        barChartPanel.setBorder(BorderFactory.createTitledBorder("Bài viết theo người dùng"));
         
         // Biểu đồ tròn cho tỷ lệ likes
-        JFreeChart pieChart1 = createPieChart("Likes Distribution");
+        JFreeChart pieChart1 = createPieChart("Thống kê lượt thích");
         ChartPanel pieChartPanel1 = new ChartPanel(pieChart1);
-        pieChartPanel1.setBorder(BorderFactory.createTitledBorder("Likes Distribution"));
+        pieChartPanel1.setBorder(BorderFactory.createTitledBorder("Thống kê lượt thích"));
         
         // Biểu đồ tròn cho tỷ lệ comments
-        JFreeChart pieChart2 = createPieChart("Comments Distribution");
+        JFreeChart pieChart2 = createPieChart("Thống kê bình luận");
         ChartPanel pieChartPanel2 = new ChartPanel(pieChart2);
-        pieChartPanel2.setBorder(BorderFactory.createTitledBorder("Comments Distribution"));
+        pieChartPanel2.setBorder(BorderFactory.createTitledBorder("Thống kê bình luận"));
         
         panel.add(barChartPanel);
         panel.add(pieChartPanel1);
@@ -133,7 +133,7 @@ public class StatisticsBlog extends JPanel {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
                 "Error creating bar chart: " + e.getMessage(),
-                "Database Error",
+                "Lỗi cơ sở dữ liệu",
                 JOptionPane.ERROR_MESSAGE);
         }
         
@@ -197,7 +197,7 @@ public class StatisticsBlog extends JPanel {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
                 "Error creating pie chart: " + e.getMessage(),
-                "Database Error",
+                "Lỗi cơ sở dữ liệu",
                 JOptionPane.ERROR_MESSAGE);
         }
         
@@ -255,7 +255,7 @@ public class StatisticsBlog extends JPanel {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
                 "Error loading statistics: " + e.getMessage(),
-                "Database Error",
+                "Lỗi cơ sở dữ liệu",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -276,7 +276,7 @@ public class StatisticsBlog extends JPanel {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
                 "Error refreshing statistics: " + e.getMessage(),
-                "Database Error",
+                "Lỗi cơ sở dữ liệu",
                 JOptionPane.ERROR_MESSAGE);
         }
     }

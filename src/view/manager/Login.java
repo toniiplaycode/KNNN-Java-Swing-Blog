@@ -1,4 +1,4 @@
-package view;
+package view.manager;
 
 import javax.swing.*;
 import javax.swing.border.*;
@@ -6,6 +6,9 @@ import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
 import utils.DBConnection;
+import java.util.prefs.Preferences;
+import org.mindrot.jbcrypt.BCrypt;
+import view.MainManage;
 
 public class Login extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -142,14 +145,14 @@ public class Login extends JFrame {
         mainPanel.add(loginPanel);
         
         // Add action listener for login button
-        btnLogin.addActionListener(e -> login());
+        btnLogin.addActionListener(e -> signIn());
         
         // Add key listener for Enter key
         KeyAdapter enterKeyListener = new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    login();
+                    signIn();
                 }
             }
         };
@@ -163,39 +166,53 @@ public class Login extends JFrame {
         setLocationRelativeTo(null);
     }
     
-    private void login() {
+    private void signIn() {
         String email = txtEmail.getText().trim();
         String password = new String(txtPassword.getPassword());
         
         if (email.isEmpty() || password.isEmpty()) {
-            showError("Please enter both email and password");
+            showError("Vui lòng nhập email và mật khẩu");
             return;
         }
         
-        // Validate email format
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            showError("Invalid email format");
+            showError("Định dạng email không hợp lệ");
             return;
         }
         
         try {
             connection = DBConnection.getConnection();
-            String query = "SELECT * FROM tbl_admin WHERE email = ? AND password = ?";
+            String query = "SELECT * FROM tbl_admin WHERE email = ?";
             PreparedStatement ps = connection.prepareStatement(query);
             ps.setString(1, email);
-            ps.setString(2, password);
             ResultSet rs = ps.executeQuery();
             
             if (rs.next()) {
-                // Login successful
-                int adminId = rs.getInt("id");
-                dispose();
-                new MainManage(adminId).setVisible(true);
+                String storedHashedPassword = rs.getString("password");
+                if (BCrypt.checkpw(password, storedHashedPassword)) {
+                    int adminId = rs.getInt("id");
+                    
+                    // Lưu thông tin đăng nhập nếu chọn Remember me
+                    if (chkRemember.isSelected()) {
+                        Preferences prefs = Preferences.userRoot();
+                        prefs.put("manager_email", email);
+                        prefs.put("manager_password", storedHashedPassword);
+                    } else {
+                        Preferences prefs = Preferences.userRoot();
+                        prefs.remove("manager_email");
+                        prefs.remove("manager_password");
+                    }
+                    
+                    dispose();
+                    new MainManage(adminId).showManagerUI(adminId);
+                } else {
+                    showError("Email hoặc mật khẩu không đúng");
+                }
             } else {
-                showError("Invalid email or password");
+                showError("Email hoặc mật khẩu không đúng");
             }
         } catch (SQLException ex) {
-            showError("Database error: " + ex.getMessage());
+            showError("Lỗi cơ sở dữ liệu: " + ex.getMessage());
             ex.printStackTrace();
         }
     }

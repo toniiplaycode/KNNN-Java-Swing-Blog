@@ -40,7 +40,7 @@ public class ListUsers extends JPanel {
 		JPanel searchPanel = new JPanel(new BorderLayout());
 		txtSearch = new JTextField();
 		txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-		searchPanel.add(new JLabel("Search: "), BorderLayout.WEST);
+		searchPanel.add(new JLabel("Tìm kiếm: "), BorderLayout.WEST);
 		searchPanel.add(txtSearch, BorderLayout.CENTER);
 		searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 		add(searchPanel, BorderLayout.NORTH);
@@ -119,7 +119,7 @@ public class ListUsers extends JPanel {
 		JPanel fieldsPanel = new JPanel(new GridLayout(6, 2, 10, 10));
 		
 		// Username
-		JLabel lblUsername = new JLabel("Username:");
+		JLabel lblUsername = new JLabel("Tên đăng nhập:");
 		lblUsername.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		txtUsername = new JTextField();
 		txtUsername.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -135,7 +135,7 @@ public class ListUsers extends JPanel {
 		fieldsPanel.add(txtEmail);
 		
 		// Password
-		JLabel lblPassword = new JLabel("Password:");
+		JLabel lblPassword = new JLabel("Mật khẩu:");
 		lblPassword.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		txtPassword = new JPasswordField();
 		txtPassword.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -143,7 +143,7 @@ public class ListUsers extends JPanel {
 		fieldsPanel.add(txtPassword);
 		
 		// Address
-		JLabel lblAddress = new JLabel("Address:");
+		JLabel lblAddress = new JLabel("Địa chỉ:");
 		lblAddress.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		txtAddress = new JTextField();
 		txtAddress.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -151,7 +151,7 @@ public class ListUsers extends JPanel {
 		fieldsPanel.add(txtAddress);
 		
 		// Avatar
-		JLabel lblAvatar = new JLabel("Avatar Link:");
+		JLabel lblAvatar = new JLabel("Liên kết Avatar:");
 		lblAvatar.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		txtAvatar = new JTextField();
 		txtAvatar.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -159,11 +159,11 @@ public class ListUsers extends JPanel {
 		fieldsPanel.add(txtAvatar);
 		
 		// Gender
-		JLabel lblGender = new JLabel("Gender:");
+		JLabel lblGender = new JLabel("Giới tính:");
 		lblGender.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		JPanel genderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-		rbtnMale = new JRadioButton("Male");
-		rbtnFemale = new JRadioButton("Female");
+		rbtnMale = new JRadioButton("Nam");
+		rbtnFemale = new JRadioButton("Nữ");
 		genderGroup = new ButtonGroup();
 		genderGroup.add(rbtnMale);
 		genderGroup.add(rbtnFemale);
@@ -177,10 +177,10 @@ public class ListUsers extends JPanel {
 		// Button panel
 		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
 		
-		btnAdd = createStyledButton("Add", new Color(46, 204, 113));
-		btnUpdate = createStyledButton("Update", new Color(52, 152, 219));
-		btnDelete = createStyledButton("Delete", new Color(231, 76, 60));
-		btnClear = createStyledButton("Clear", new Color(149, 165, 166));
+		btnAdd = createStyledButton("Thêm", new Color(46, 204, 113));
+		btnUpdate = createStyledButton("Cập nhật", new Color(52, 152, 219));
+		btnDelete = createStyledButton("Xóa", new Color(231, 76, 60));
+		btnClear = createStyledButton("Xóa trắng", new Color(149, 165, 166));
 		
 		buttonPanel.add(btnAdd);
 		buttonPanel.add(btnUpdate);
@@ -503,8 +503,8 @@ public class ListUsers extends JPanel {
 			int result = ps.executeUpdate();
 			if (result > 0) {
 				JOptionPane.showMessageDialog(this,
-					"User added successfully!",
-					"Success",
+					"Thêm người dùng thành công!",
+					"Thành công",
 					JOptionPane.INFORMATION_MESSAGE);
 				loadUsers("");
 				clearFields();
@@ -522,8 +522,8 @@ public class ListUsers extends JPanel {
 		int selectedRow = table.getSelectedRow();
 		if (selectedRow == -1) {
 			JOptionPane.showMessageDialog(this,
-				"Please select a user to update!",
-				"Selection Required",
+				"Vui lòng chọn một người dùng để cập nhật!",
+				"Cần chọn",
 				JOptionPane.WARNING_MESSAGE);
 			return;
 		}
@@ -570,8 +570,8 @@ public class ListUsers extends JPanel {
 			int result = ps.executeUpdate();
 			if (result > 0) {
 				JOptionPane.showMessageDialog(this,
-					"User updated successfully!",
-					"Success",
+					"Cập nhật người dùng thành công!",
+					"Thành công",
 					JOptionPane.INFORMATION_MESSAGE);
 				loadUsers("");
 				clearFields();
@@ -589,15 +589,15 @@ public class ListUsers extends JPanel {
 		int selectedRow = table.getSelectedRow();
 		if (selectedRow == -1) {
 			JOptionPane.showMessageDialog(this,
-				"Please select a user to delete!",
-				"Selection Required",
+				"Vui lòng chọn một người dùng để xóa!",
+				"Cần chọn",
 				JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 
 		int confirm = JOptionPane.showConfirmDialog(this,
-			"Are you sure you want to delete this user?",
-			"Confirm Delete",
+			"Bạn có chắc chắn muốn xóa người dùng này?",
+			"Xác nhận xóa",
 			JOptionPane.YES_NO_OPTION,
 			JOptionPane.WARNING_MESSAGE);
 
@@ -605,21 +605,21 @@ public class ListUsers extends JPanel {
 			try {
 				int id = (int) tableModel.getValueAt(selectedRow, 0);
 				connection = DBConnection.getConnection();
-			String sql = "DELETE FROM tbl_user WHERE id = ?";
+				String sql = "DELETE FROM tbl_user WHERE id = ?";
 				PreparedStatement ps = connection.prepareStatement(sql);
 				ps.setInt(1, id);
 
 				int result = ps.executeUpdate();
 				if (result > 0) {
 					JOptionPane.showMessageDialog(this,
-						"User deleted successfully!",
-						"Success",
+						"Xóa người dùng thành công!",
+						"Thành công",
 						JOptionPane.INFORMATION_MESSAGE);
-				loadUsers("");
-				clearFields();
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
+					loadUsers("");
+					clearFields();
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
 				JOptionPane.showMessageDialog(this,
 					"Error deleting user: " + e.getMessage(),
 					"Database Error",
@@ -635,8 +635,8 @@ public class ListUsers extends JPanel {
 		
 		if (username.isEmpty()) {
 			JOptionPane.showMessageDialog(this,
-				"Username is required!",
-				"Validation Error",
+				"Tên đăng nhập là bắt buộc!",
+				"Lỗi xác thực",
 				JOptionPane.ERROR_MESSAGE);
 			txtUsername.requestFocus();
 			return false;
@@ -644,8 +644,8 @@ public class ListUsers extends JPanel {
 		
 		if (email.isEmpty()) {
 			JOptionPane.showMessageDialog(this,
-				"Email is required!",
-				"Validation Error",
+				"Email là bắt buộc!",
+				"Lỗi xác thực",
 				JOptionPane.ERROR_MESSAGE);
 			txtEmail.requestFocus();
 			return false;
@@ -653,8 +653,8 @@ public class ListUsers extends JPanel {
 		
 		if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
 			JOptionPane.showMessageDialog(this,
-				"Invalid email format!",
-				"Validation Error",
+				"Định dạng email không hợp lệ!",
+				"Lỗi xác thực",
 				JOptionPane.ERROR_MESSAGE);
 			txtEmail.requestFocus();
 			return false;
@@ -663,8 +663,8 @@ public class ListUsers extends JPanel {
 		// Chỉ validate password khi thêm mới hoặc khi có nhập password mới
 		if (!isUpdate && password.isEmpty()) {
 			JOptionPane.showMessageDialog(this,
-				"Password is required!",
-				"Validation Error",
+				"Mật khẩu là bắt buộc!",
+				"Lỗi xác thực",
 				JOptionPane.ERROR_MESSAGE);
 			txtPassword.requestFocus();
 			return false;
@@ -672,8 +672,8 @@ public class ListUsers extends JPanel {
 		
 		if (!rbtnMale.isSelected() && !rbtnFemale.isSelected()) {
 			JOptionPane.showMessageDialog(this,
-				"Please select a gender!",
-				"Validation Error",
+				"Vui lòng chọn giới tính!",
+				"Lỗi xác thực",
 				JOptionPane.ERROR_MESSAGE);
 			return false;
 		}

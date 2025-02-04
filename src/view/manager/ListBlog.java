@@ -80,7 +80,7 @@ public class ListBlog extends JPanel {
 		searchPanel = new JPanel(new BorderLayout());
 		txtSearch = new JTextField();
 		txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-		searchPanel.add(new JLabel("Search: "), BorderLayout.WEST);
+		searchPanel.add(new JLabel("Tìm kiếm: "), BorderLayout.WEST);
 		searchPanel.add(txtSearch, BorderLayout.CENTER);
 		searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 		add(searchPanel, BorderLayout.NORTH); // Move the search panel to the top (NORTH)
@@ -189,8 +189,8 @@ public class ListBlog extends JPanel {
 		} catch (SQLException e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(this,
-				"Error loading blogs: " + e.getMessage(),
-				"Database Error",
+				"Lỗi khi tải bài viết: " + e.getMessage(),
+				"Lỗi cơ sở dữ liệu",
 				JOptionPane.ERROR_MESSAGE);
 		}
 	}
@@ -262,8 +262,8 @@ public class ListBlog extends JPanel {
 		} catch (SQLException e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(this,
-				"Error searching blogs: " + e.getMessage(),
-				"Database Error",
+				"Lỗi khi tìm kiếm bài viết: " + e.getMessage(),
+				"Lỗi cơ sở dữ liệu",
 				JOptionPane.ERROR_MESSAGE);
 		}
 	}
@@ -295,16 +295,16 @@ public class ListBlog extends JPanel {
 			int result = ps.executeUpdate();
 			if (result > 0) {
 				JOptionPane.showMessageDialog(this,
-					"Blog added successfully!",
-					"Success",
+					"Thêm bài viết thành công!",
+					"Thành công",
 					JOptionPane.INFORMATION_MESSAGE);
 				loadtbl_post();
 				clearFields();
 			}
 		} catch (SQLException e) {
 			JOptionPane.showMessageDialog(this,
-				"Error adding blog: " + e.getMessage(),
-				"Database Error",
+				"Lỗi khi thêm bài viết: " + e.getMessage(),
+				"Lỗi cơ sở dữ liệu",
 				JOptionPane.ERROR_MESSAGE);
 			e.printStackTrace();
 		}
@@ -315,8 +315,8 @@ public class ListBlog extends JPanel {
 		int selectedRow = table.getSelectedRow();
 		if (selectedRow == -1) {
 			JOptionPane.showMessageDialog(this,
-				"Please select a blog to update!",
-				"Selection Required",
+				"Vui lòng chọn một bài viết để cập nhật!",
+				"Cần chọn",
 				JOptionPane.WARNING_MESSAGE);
 			return;
 		}
@@ -347,16 +347,16 @@ public class ListBlog extends JPanel {
 			int result = ps.executeUpdate();
 			if (result > 0) {
 				JOptionPane.showMessageDialog(this,
-					"Blog updated successfully!",
-					"Success",
+					"Cập nhật bài viết thành công!",
+					"Thành công",
 					JOptionPane.INFORMATION_MESSAGE);
 				loadtbl_post();
 				clearFields();
 			}
 		} catch (SQLException e) {
 			JOptionPane.showMessageDialog(this,
-				"Error updating blog: " + e.getMessage(),
-				"Database Error",
+				"Lỗi khi cập nhật bài viết: " + e.getMessage(),
+				"Lỗi cơ sở dữ liệu",
 				JOptionPane.ERROR_MESSAGE);
 			e.printStackTrace();
 		}
@@ -367,15 +367,15 @@ public class ListBlog extends JPanel {
 		int selectedRow = table.getSelectedRow();
 		if (selectedRow == -1) {
 			JOptionPane.showMessageDialog(this,
-				"Please select a blog to delete!",
-				"Selection Required",
+				"Vui lòng chọn một bài viết để xóa!",
+				"Cần chọn",
 				JOptionPane.WARNING_MESSAGE);
 			return;
 		}
 		
 		int confirm = JOptionPane.showConfirmDialog(this,
-			"Are you sure you want to delete this blog?",
-			"Confirm Delete",
+			"Bạn có chắc chắn muốn xóa bài viết này?",
+			"Xác nhận xóa",
 			JOptionPane.YES_NO_OPTION,
 			JOptionPane.WARNING_MESSAGE);
 			
@@ -390,16 +390,16 @@ public class ListBlog extends JPanel {
 				int result = ps.executeUpdate();
 				if (result > 0) {
 					JOptionPane.showMessageDialog(this,
-						"Blog deleted successfully!",
-						"Success",
+						"Xóa bài viết thành công!",
+						"Thành công",
 						JOptionPane.INFORMATION_MESSAGE);
 					loadtbl_post();
 					clearFields();
 				}
 			} catch (SQLException e) {
 				JOptionPane.showMessageDialog(this,
-					"Error deleting blog: " + e.getMessage(),
-					"Database Error",
+					"Lỗi khi xóa bài viết: " + e.getMessage(),
+					"Lỗi cơ sở dữ liệu",
 					JOptionPane.ERROR_MESSAGE);
 				e.printStackTrace();
 			}
@@ -456,7 +456,7 @@ public class ListBlog extends JPanel {
 							detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.Y_AXIS));
 
 							JPanel titlePanel = new JPanel();
-							JLabel lblTitle = new JLabel("Title: " + title);
+							JLabel lblTitle = new JLabel("Tiêu đề: " + title);
 							lblTitle.setFont(new Font("Arial", Font.BOLD, 14));
 							titlePanel.add(lblTitle);
 
@@ -478,7 +478,7 @@ public class ListBlog extends JPanel {
 							userPanel.add(lblAddress);
 
 							JPanel contentPanel = new JPanel();
-							JLabel lblContent = new JLabel("<html>Content: " + content + "</html>");
+							JLabel lblContent = new JLabel("<html>Nội dung: " + content + "</html>");
 							lblContent.setFont(new Font("Arial", Font.PLAIN, 12));
 							contentPanel.add(lblContent);
 
@@ -549,8 +549,8 @@ public class ListBlog extends JPanel {
 		} catch (SQLException e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(this,
-				"Error loading blog for edit: " + e.getMessage(),
-				"Database Error",
+				"Lỗi khi tải bài viết để chỉnh sửa: " + e.getMessage(),
+				"Lỗi cơ sở dữ liệu",
 				JOptionPane.ERROR_MESSAGE);
 		}
 	}
@@ -564,7 +564,7 @@ public class ListBlog extends JPanel {
 		JPanel fieldsPanel = new JPanel(new GridLayout(3, 2, 10, 10));
 		
 		// Title field
-		JLabel lblTitle = new JLabel("Title:");
+		JLabel lblTitle = new JLabel("Tiêu đề:");
 		lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		txtTitle = new JTextField();
 		txtTitle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -572,7 +572,7 @@ public class ListBlog extends JPanel {
 		fieldsPanel.add(txtTitle);
 		
 		// Content field
-		JLabel lblContent = new JLabel("Content:");
+		JLabel lblContent = new JLabel("Nội dung:");
 		lblContent.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		txtContent = new JTextField();
 		txtContent.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -580,7 +580,7 @@ public class ListBlog extends JPanel {
 		fieldsPanel.add(txtContent);
 		
 		// Image Link field
-		JLabel lblImgLink = new JLabel("Image Link:");
+		JLabel lblImgLink = new JLabel("Liên kết hình ảnh:");
 		lblImgLink.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		txtImgLink = new JTextField();
 		txtImgLink.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -592,10 +592,10 @@ public class ListBlog extends JPanel {
 		// Button panel
 		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
 		
-		btnAdd = createStyledButton("Add", new Color(46, 204, 113));
-		btnUpdate = createStyledButton("Update", new Color(52, 152, 219));
-		btnDelete = createStyledButton("Delete", new Color(231, 76, 60));
-		btnClear = createStyledButton("Clear", new Color(149, 165, 166));
+		btnAdd = createStyledButton("Thêm", new Color(46, 204, 113));
+		btnUpdate = createStyledButton("Cập nhật", new Color(52, 152, 219));
+		btnDelete = createStyledButton("Xóa", new Color(231, 76, 60));
+		btnClear = createStyledButton("Xóa trắng", new Color(149, 165, 166));
 		
 		buttonPanel.add(btnAdd);
 		buttonPanel.add(btnUpdate);
@@ -649,7 +649,7 @@ public class ListBlog extends JPanel {
 		filterPanel.setBorder(new EmptyBorder(0, 10, 10, 10));
 		
 		// Author filter
-		JLabel lblAuthor = new JLabel("Author:");
+		JLabel lblAuthor = new JLabel("Tác giả:");
 		lblAuthor.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		cboAuthor = new JComboBox<>();
 		cboAuthor.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -657,7 +657,7 @@ public class ListBlog extends JPanel {
 		loadAuthors();
 		
 		// Month filter
-		JLabel lblMonth = new JLabel("Month:");
+		JLabel lblMonth = new JLabel("Tháng:");
 		lblMonth.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		cboMonth = new JComboBox<>(new String[] {
 			"All Months", "January", "February", "March", "April", "May", "June",
@@ -667,7 +667,7 @@ public class ListBlog extends JPanel {
 		cboMonth.setPreferredSize(new Dimension(100, 25));
 		
 		// Year filter
-		JLabel lblYear = new JLabel("Year:");
+		JLabel lblYear = new JLabel("Năm:");
 		lblYear.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		cboYear = new JComboBox<>();
 		cboYear.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -675,18 +675,18 @@ public class ListBlog extends JPanel {
 		loadYears();
 		
 		// Sort order
-		JLabel lblSort = new JLabel("Sort:");
+		JLabel lblSort = new JLabel("Sắp xếp:");
 		lblSort.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		cboSort = new JComboBox<>(new String[] {"Newest First", "Oldest First"});
 		cboSort.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 		cboSort.setPreferredSize(new Dimension(100, 25));
 		
 		// Filter buttons
-		btnFilter = createStyledButton("Filter", new Color(52, 152, 219));
+		btnFilter = createStyledButton("Lọc", new Color(52, 152, 219));
 		btnFilter.setPreferredSize(new Dimension(80, 25));
 		btnFilter.addActionListener(e -> applyFilters());
 		
-		btnClearFilter = createStyledButton("Clear", new Color(149, 165, 166));
+		btnClearFilter = createStyledButton("Xóa", new Color(149, 165, 166));
 		btnClearFilter.setPreferredSize(new Dimension(80, 25));
 		btnClearFilter.addActionListener(e -> clearFilters());
 		

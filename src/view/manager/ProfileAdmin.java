@@ -7,6 +7,7 @@ import java.awt.event.*;
 import java.sql.*;
 import java.net.URL;
 import utils.DBConnection;
+import java.util.prefs.Preferences;
 
 public class ProfileAdmin extends JPanel {
     private static final long serialVersionUID = 1L;
@@ -46,7 +47,7 @@ public class ProfileAdmin extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(new Color(200, 200, 200)),
-            "Profile Information",
+            "Thông tin cá nhân",
             TitledBorder.LEFT,
             TitledBorder.TOP,
             new Font("Segoe UI", Font.BOLD, 14)
@@ -59,13 +60,13 @@ public class ProfileAdmin extends JPanel {
         gbc.insets = new Insets(5, 5, 5, 5);
         
         // Username
-        addFormField(formPanel, "Username:", txtUsername = new JTextField(), gbc, 0);
+        addFormField(formPanel, "Tên đăng nhập:", txtUsername = new JTextField(), gbc, 0);
         
         // Email
         addFormField(formPanel, "Email:", txtEmail = new JTextField(), gbc, 1);
         
         // Address
-        addFormField(formPanel, "Address:", txtAddress = new JTextField(), gbc, 2);
+        addFormField(formPanel, "Địa chỉ:", txtAddress = new JTextField(), gbc, 2);
         
         // Gender
         JPanel genderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -76,18 +77,18 @@ public class ProfileAdmin extends JPanel {
         genderGroup.add(rbtnFemale);
         genderPanel.add(rbtnMale);
         genderPanel.add(rbtnFemale);
-        addFormField(formPanel, "Gender:", genderPanel, gbc, 3);
+        addFormField(formPanel, "Giới tính:", genderPanel, gbc, 3);
         
         // Update button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         
         // Update Profile button
-        btnUpdate = new JButton("Update Profile");
+        btnUpdate = new JButton("Cập nhật thông tin");
         styleButton(btnUpdate, new Color(52, 152, 219));
         btnUpdate.addActionListener(e -> updateProfile());
         
         // Logout button
-        btnLogout = new JButton("Logout");
+        btnLogout = new JButton("Đăng xuất");
         styleButton(btnLogout, new Color(231, 76, 60)); // Màu đỏ cho nút logout
         btnLogout.addActionListener(e -> logout());
         
@@ -105,7 +106,7 @@ public class ProfileAdmin extends JPanel {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(new Color(200, 200, 200)),
-            "Change Password",
+            "Thông tin cá nhân",
             TitledBorder.LEFT,
             TitledBorder.TOP,
             new Font("Segoe UI", Font.BOLD, 14)
@@ -118,16 +119,16 @@ public class ProfileAdmin extends JPanel {
         gbc.insets = new Insets(5, 5, 5, 5);
         
         // Current password
-        addFormField(passwordPanel, "Current Password:", txtCurrentPassword = new JPasswordField(), gbc, 0);
+        addFormField(passwordPanel, "Mật khẩu hiện tại:", txtCurrentPassword = new JPasswordField(), gbc, 0);
         
         // New password
-        addFormField(passwordPanel, "New Password:", txtNewPassword = new JPasswordField(), gbc, 1);
+        addFormField(passwordPanel, "Mật khẩu mới:", txtNewPassword = new JPasswordField(), gbc, 1);
         
         // Confirm password
-        addFormField(passwordPanel, "Confirm Password:", txtConfirmPassword = new JPasswordField(), gbc, 2);
+        addFormField(passwordPanel, "Xác nhận mật khẩu:", txtConfirmPassword = new JPasswordField(), gbc, 2);
         
         // Change password button
-        btnChangePassword = new JButton("Change Password");
+        btnChangePassword = new JButton("Đổi mật khẩu");
         styleButton(btnChangePassword, new Color(46, 204, 113));
         btnChangePassword.addActionListener(e -> changePassword());
         
@@ -199,8 +200,8 @@ public class ProfileAdmin extends JPanel {
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error loading admin data: " + e.getMessage(),
-                "Error",
+                "Lỗi khi tải dữ liệu admin: " + e.getMessage(),
+                "Lỗi",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -222,15 +223,15 @@ public class ProfileAdmin extends JPanel {
             int result = ps.executeUpdate();
             if (result > 0) {
                 JOptionPane.showMessageDialog(this,
-                    "Profile updated successfully!",
-                    "Success",
+                    "Cập nhật thông tin thành công!",
+                    "Thành công",
                     JOptionPane.INFORMATION_MESSAGE);
             }
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error updating profile: " + e.getMessage(),
-                "Error",
+                "Lỗi khi cập nhật thông tin: " + e.getMessage(),
+                "Lỗi",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -251,8 +252,8 @@ public class ProfileAdmin extends JPanel {
                 String currentPassword = new String(txtCurrentPassword.getPassword());
                 if (!rs.getString("password").equals(currentPassword)) {
                     JOptionPane.showMessageDialog(this,
-                        "Current password is incorrect",
-                        "Error",
+                        "Mật khẩu hiện tại không đúng",
+                        "Lỗi",
                         JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -267,16 +268,16 @@ public class ProfileAdmin extends JPanel {
             int result = updatePs.executeUpdate();
             if (result > 0) {
                 JOptionPane.showMessageDialog(this,
-                    "Password changed successfully!",
-                    "Success",
+                    "Đổi mật khẩu thành công!",
+                    "Thành công",
                     JOptionPane.INFORMATION_MESSAGE);
                 clearPasswordFields();
             }
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error changing password: " + e.getMessage(),
-                "Error",
+                "Lỗi khi đổi mật khẩu: " + e.getMessage(),
+                "Lỗi",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -286,22 +287,22 @@ public class ProfileAdmin extends JPanel {
         String email = txtEmail.getText().trim();
         
         if (username.isEmpty()) {
-            showError("Username is required");
+            showError("Tên đăng nhập là bắt buộc");
             return false;
         }
         
         if (email.isEmpty()) {
-            showError("Email is required");
+            showError("Email là bắt buộc");
             return false;
         }
         
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            showError("Invalid email format");
+            showError("Định dạng email không hợp lệ");
             return false;
         }
         
         if (!rbtnMale.isSelected() && !rbtnFemale.isSelected()) {
-            showError("Please select a gender");
+            showError("Vui lòng chọn giới tính");
             return false;
         }
         
@@ -314,22 +315,22 @@ public class ProfileAdmin extends JPanel {
         String confirmPassword = new String(txtConfirmPassword.getPassword());
         
         if (currentPassword.isEmpty()) {
-            showError("Current password is required");
+            showError("Mật khẩu hiện tại là bắt buộc");
             return false;
         }
         
         if (newPassword.isEmpty()) {
-            showError("New password is required");
+            showError("Mật khẩu mới là bắt buộc");
             return false;
         }
         
         if (confirmPassword.isEmpty()) {
-            showError("Confirm password is required");
+            showError("Xác nhận mật khẩu là bắt buộc");
             return false;
         }
         
         if (!newPassword.equals(confirmPassword)) {
-            showError("New password and confirm password do not match");
+            showError("Mật khẩu mới và xác nhận mật khẩu không khớp");
             return false;
         }
         
@@ -345,26 +346,31 @@ public class ProfileAdmin extends JPanel {
     private void showError(String message) {
         JOptionPane.showMessageDialog(this,
             message,
-            "Error",
+            "Lỗi",
             JOptionPane.ERROR_MESSAGE);
     }
     
     private void logout() {
         int choice = JOptionPane.showConfirmDialog(
             this,
-            "Are you sure you want to logout?",
-            "Confirm Logout",
+            "Bạn có chắc chắn muốn đăng xuất?",
+            "Xác nhận đăng xuất",
             JOptionPane.YES_NO_OPTION,
             JOptionPane.QUESTION_MESSAGE
         );
         
         if (choice == JOptionPane.YES_OPTION) {
+            // Xóa thông tin đăng nhập đã lưu
+            Preferences prefs = Preferences.userRoot();
+            prefs.remove("manager_email");
+            prefs.remove("manager_password");
+            
             // Tìm JFrame cha
             Window window = SwingUtilities.getWindowAncestor(this);
             if (window instanceof JFrame) {
                 window.dispose(); // Đóng cửa sổ hiện tại
                 
-                // Hiển thị màn hình login
+                // Hiển thị màn hình login của manager
                 EventQueue.invokeLater(() -> {
                     new Login().setVisible(true);
                 });

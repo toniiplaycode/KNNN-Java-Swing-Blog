@@ -6,6 +6,20 @@ import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
 import utils.DBConnection;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.awt.image.BufferedImage;
+import java.awt.image.Graphics2D;
+import java.awt.RenderingHints;
+import javax.imageio.ImageIO;
+import java.net.URL;
+import javax.swing.SwingWorker;
+import javax.swing.Timer;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.ImageIcon;
 
 public class HandlePostDialog extends JDialog {
     private Connection connection;
@@ -19,6 +33,10 @@ public class HandlePostDialog extends JDialog {
     private JLabel lblTitle;
     private JLabel lblContent;
     private JLabel lblImageUrl;
+    private JPanel categoryPanel;
+    private List<JCheckBox> categoryCheckboxes;
+    private JLabel lblImagePreview;
+    private Timer previewTimer;
     
     public HandlePostDialog(JFrame parent, int userId, Runnable onPostAdded) {
         super(parent, "Tạo bài viết mới", true);
@@ -44,7 +62,7 @@ public class HandlePostDialog extends JDialog {
     }
     
     private void initializeUI() {
-        setSize(1000, 700);
+        setSize(1000, 800);
         setLocationRelativeTo(null);
         
         JPanel mainContainer = new JPanel(new BorderLayout());
@@ -106,19 +124,69 @@ public class HandlePostDialog extends JDialog {
         scrollContent.setPreferredSize(new Dimension(0, 300));
         editorPanel.add(scrollContent, BorderLayout.CENTER);
         
-        lblImageUrl = new JLabel("URL ảnh");
-        lblImageUrl.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        txtImageUrl = new JTextArea(4, 20);
-        txtImageUrl.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        // Label cho URL ảnh
+        lblImageUrl = new JLabel("URL ảnh:");
+        lblImageUrl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        
+        // Panel chứa text field và preview
+        JPanel imageContentPanel = new JPanel(new BorderLayout(5, 5));
+        imageContentPanel.setOpaque(false);
+        
+        // Text field cho URL
+        txtImageUrl = new JTextArea(2, 20);
         txtImageUrl.setLineWrap(true);
-        JScrollPane scrollImage = new JScrollPane(txtImageUrl);
-        scrollImage.setBorder(BorderFactory.createLineBorder(new Color(218, 220, 224), 1));
+        txtImageUrl.setWrapStyleWord(true);
+        txtImageUrl.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(200, 200, 200)),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        
+        // Preview label
+        lblImagePreview = new JLabel();
+        lblImagePreview.setPreferredSize(new Dimension(200, 200));
+        lblImagePreview.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+        lblImagePreview.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // Thêm DocumentListener cho txtImageUrl
+        previewTimer = new Timer(500, e -> loadImagePreview());
+        previewTimer.setRepeats(false);
+        
+        txtImageUrl.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent e) { restartTimer(); }
+            public void removeUpdate(DocumentEvent e) { restartTimer(); }
+            public void insertUpdate(DocumentEvent e) { restartTimer(); }
+        });
+        
+        imageContentPanel.add(new JScrollPane(txtImageUrl), BorderLayout.CENTER);
+        imageContentPanel.add(lblImagePreview, BorderLayout.EAST);
+        
+        // Category selection
+        JLabel lblCategory = new JLabel("Thể loại");
+        lblCategory.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        
+        categoryPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        categoryPanel.setOpaque(false);
+        categoryCheckboxes = new ArrayList<>();
+        
+        // Load categories từ database
+        loadCategories();
+        
+        // Nếu đang ở chế độ edit, load các category đã chọn
+        if (isEditMode) {
+            loadSelectedCategories();
+        }
+        
+        JScrollPane categoryScroll = new JScrollPane(categoryPanel);
+        categoryScroll.setBorder(BorderFactory.createLineBorder(new Color(218, 220, 224), 1));
+        categoryScroll.setPreferredSize(new Dimension(0, 80));
         
         formPanel.add(createFormGroup(lblTitle, txtTitle));
         formPanel.add(Box.createVerticalStrut(20));
         formPanel.add(createFormGroup(lblContent, editorPanel));
         formPanel.add(Box.createVerticalStrut(20));
-        formPanel.add(createFormGroup(lblImageUrl, scrollImage));
+        formPanel.add(createFormGroup(lblImageUrl, imageContentPanel));
+        formPanel.add(Box.createVerticalStrut(20));
+        formPanel.add(createFormGroup(lblCategory, categoryScroll));
         
         contentPanel.add(formPanel, BorderLayout.CENTER);
         
@@ -353,6 +421,49 @@ public class HandlePostDialog extends JDialog {
         }
     }
     
+    private void loadCategories() {
+        try {
+            connection = DBConnection.getConnection();
+            String query = "SELECT id, title FROM tbl_category ORDER BY title";
+            PreparedStatement ps = connection.prepareStatement(query);
+            ResultSet rs = ps.executeQuery();
+            
+            while (rs.next()) {
+                JCheckBox checkbox = new JCheckBox(rs.getString("title"));
+                checkbox.putClientProperty("category_id", rs.getInt("id"));
+                checkbox.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+                checkbox.setOpaque(false);
+                categoryCheckboxes.add(checkbox);
+                categoryPanel.add(checkbox);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    private void loadSelectedCategories() {
+        try {
+            connection = DBConnection.getConnection();
+            String query = "SELECT category_id FROM tbl_post_category WHERE post_id = ?";
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setInt(1, postId);
+            ResultSet rs = ps.executeQuery();
+            
+            Set<Integer> selectedIds = new HashSet<>();
+            while (rs.next()) {
+                selectedIds.add(rs.getInt("category_id"));
+            }
+            
+            // Check các checkbox tương ứng
+            for (JCheckBox checkbox : categoryCheckboxes) {
+                int categoryId = (int) checkbox.getClientProperty("category_id");
+                checkbox.setSelected(selectedIds.contains(categoryId));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    
     private boolean savePost(String title, String content, String imageUrls) {
         if (title.isEmpty() || content.isEmpty()) {
             JOptionPane.showMessageDialog(this,
@@ -364,16 +475,21 @@ public class HandlePostDialog extends JDialog {
         
         try {
             connection = DBConnection.getConnection();
+            connection.setAutoCommit(false); // Bắt đầu transaction
+            
+            // Lưu post
             String query;
             PreparedStatement ps;
+            int newPostId = 0;
+            int result = 0;
             
             // Xử lý nội dung HTML trước khi lưu
             String cleanContent = content
-                .replaceAll("(?s)<head\\b[^>]*>.*?</head>", "") // Xóa thẻ head và nội dung bên trong
-                .replaceAll("(?i)</?html[^>]*>", "") // Xóa thẻ html mở và đóng
-                .replaceAll("(?i)</?body[^>]*>", "") // Xóa thẻ body mở và đóng
-                .replaceAll("\\s+", " ") // Thay thế nhiều khoảng trắng bằng 1 khoảng trắng
-                .trim(); // Xóa khoảng trắng đầu và cuối
+                .replaceAll("(?s)<head\\b[^>]*>.*?</head>", "")
+                .replaceAll("(?i)</?html[^>]*>", "")
+                .replaceAll("(?i)</?body[^>]*>", "")
+                .replaceAll("\\s+", " ")
+                .trim();
             
             if (isEditMode) {
                 query = "UPDATE tbl_post SET title = ?, content = ?, hash_img = ? WHERE id = ? AND user_id = ?";
@@ -383,36 +499,158 @@ public class HandlePostDialog extends JDialog {
                 ps.setString(3, imageUrls.isEmpty() ? null : imageUrls);
                 ps.setInt(4, postId);
                 ps.setInt(5, userId);
+                result = ps.executeUpdate();
+                newPostId = postId;
             } else {
                 query = "INSERT INTO tbl_post (user_id, title, content, hash_img) VALUES (?, ?, ?, ?)";
-                ps = connection.prepareStatement(query);
+                ps = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
                 ps.setInt(1, userId);
                 ps.setString(2, title);
                 ps.setString(3, cleanContent);
                 ps.setString(4, imageUrls.isEmpty() ? null : imageUrls);
+                result = ps.executeUpdate();
+                
+                // Lấy ID của post vừa tạo
+                ResultSet generatedKeys = ps.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    newPostId = generatedKeys.getInt(1);
+                }
             }
             
-            int result = ps.executeUpdate();
             if (result > 0) {
+                // Xóa categories cũ nếu là edit mode
+                if (isEditMode) {
+                    query = "DELETE FROM tbl_post_category WHERE post_id = ?";
+                    ps = connection.prepareStatement(query);
+                    ps.setInt(1, postId);
+                    ps.executeUpdate();
+                }
+                
+                // Lưu categories mới
+                query = "INSERT INTO tbl_post_category (post_id, category_id) VALUES (?, ?)";
+                ps = connection.prepareStatement(query);
+                
+                for (JCheckBox checkbox : categoryCheckboxes) {
+                    if (checkbox.isSelected()) {
+                        int categoryId = (int) checkbox.getClientProperty("category_id");
+                        ps.setInt(1, newPostId);
+                        ps.setInt(2, categoryId);
+                        ps.executeUpdate();
+                    }
+                }
+                
+                connection.commit(); // Commit transaction
+                
                 JOptionPane.showMessageDialog(this,
                     isEditMode ? "Cập nhật bài viết thành công!" : "Đăng bài thành công!",
                     "Thông báo",
                     JOptionPane.INFORMATION_MESSAGE);
-                    
-                if (onPostAdded != null) {
-                    onPostAdded.run();
-                }
+                
+                // Gọi callback để cập nhật UI
+                SwingUtilities.invokeLater(() -> {
+                    if (onPostAdded != null) {
+                        onPostAdded.run();
+                    }
+                });
+                
                 return true;
             }
+            
             return false;
             
         } catch (SQLException ex) {
+            try {
+                connection.rollback();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
             ex.printStackTrace();
             JOptionPane.showMessageDialog(this,
                 "Lỗi khi " + (isEditMode ? "cập nhật" : "đăng") + " bài: " + ex.getMessage(),
                 "Lỗi",
                 JOptionPane.ERROR_MESSAGE);
             return false;
+        } finally {
+            try {
+                connection.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    private void restartTimer() {
+        previewTimer.restart();
+    }
+    
+    private void loadImagePreview() {
+        String imageUrl = txtImageUrl.getText().trim();
+        if (imageUrl.isEmpty()) {
+            lblImagePreview.setIcon(null);
+            lblImagePreview.setText("No image");
+            return;
+        }
+
+        try {
+            // Tải ảnh trong thread riêng để không block UI
+            SwingWorker<ImageIcon, Void> worker = new SwingWorker<ImageIcon, Void>() {
+                @Override
+                protected ImageIcon doInBackground() throws Exception {
+                    URL url = new URL(imageUrl);
+                    BufferedImage originalImage = ImageIO.read(url);
+                    if (originalImage == null) return null;
+                    
+                    // Tăng kích thước target từ 150x150 lên 200x200
+                    int targetWidth = 200;
+                    int targetHeight = 200;
+                    
+                    double scale = Math.min(
+                        (double) targetWidth / originalImage.getWidth(),
+                        (double) targetHeight / originalImage.getHeight()
+                    );
+                    
+                    int scaledWidth = (int) (originalImage.getWidth() * scale);
+                    int scaledHeight = (int) (originalImage.getHeight() * scale);
+                    
+                    BufferedImage scaledImage = new BufferedImage(
+                        scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB
+                    );
+                    
+                    Graphics2D g2d = scaledImage.createGraphics();
+                    g2d.setRenderingHint(
+                        RenderingHints.KEY_INTERPOLATION,
+                        RenderingHints.VALUE_INTERPOLATION_BILINEAR
+                    );
+                    g2d.drawImage(originalImage, 0, 0, scaledWidth, scaledHeight, null);
+                    g2d.dispose();
+                    
+                    return new ImageIcon(scaledImage);
+                }
+                
+                @Override
+                protected void done() {
+                    try {
+                        ImageIcon icon = get();
+                        if (icon != null) {
+                            lblImagePreview.setIcon(icon);
+                            lblImagePreview.setText(null);
+                        } else {
+                            lblImagePreview.setIcon(null);
+                            lblImagePreview.setText("Invalid image");
+                        }
+                    } catch (Exception e) {
+                        lblImagePreview.setIcon(null);
+                        lblImagePreview.setText("Error loading image");
+                        e.printStackTrace();
+                    }
+                }
+            };
+            worker.execute();
+            
+        } catch (Exception e) {
+            lblImagePreview.setIcon(null);
+            lblImagePreview.setText("Invalid URL");
+            e.printStackTrace();
         }
     }
 } 

@@ -9,12 +9,15 @@ import view.manager.ListBlog;
 import view.manager.ListUsers;
 import view.manager.StatisticsBlog;
 import view.manager.ProfileAdmin;
+import view.manager.ListCategory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.prefs.Preferences;
 import utils.DBConnection;
+import org.mindrot.jbcrypt.BCrypt;
+import view.manager.Login;
 
 public class MainManage extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -47,7 +50,7 @@ public class MainManage extends JFrame {
         // Panel cho option Người đọc
         JPanel readerPanel = createOptionPanel(
             "Người đọc",
-            "Đọc và tương tác với bài viết, bình luận",
+            "Đọc và tương tác với bài viết, bình luận và xem blog cá nhân",
             "/icons/news.png",
             new Color(52, 152, 219),
             e -> initReaderUI()
@@ -56,7 +59,7 @@ public class MainManage extends JFrame {
         // Panel cho option Quản lý
         JPanel managerPanel = createOptionPanel(
             "Quản lý",
-            "Quản lý bài viết, người dùng và xem thống kê",
+            "Quản lý bài viết, thể loại, người dùng và xem thống kê",
             "/icons/manage.png",
             new Color(46, 204, 113),
             e -> initManagerUI()
@@ -224,6 +227,33 @@ public class MainManage extends JFrame {
     }
     
     public void initManagerUI() {
+        String savedEmail = getSavedManagerEmail();
+        String savedHashedPassword = getSavedManagerPassword();
+        
+        if (savedEmail != null && savedHashedPassword != null) {
+            try {
+                Connection connection = DBConnection.getConnection();
+                String query = "SELECT * FROM tbl_admin WHERE email = ? AND password = ?";
+                PreparedStatement ps = connection.prepareStatement(query);
+                ps.setString(1, savedEmail);
+                ps.setString(2, savedHashedPassword);
+                ResultSet rs = ps.executeQuery();
+                
+                if (rs.next()) {
+                    int adminId = rs.getInt("id");
+                    showManagerUI(adminId);
+                    return;
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+        
+        dispose();
+        new Login().setVisible(true);
+    }
+
+    public void showManagerUI(int adminId) {
         // Tạo frame mới cho giao diện quản lý
         JFrame managerFrame = new JFrame("Quản lý");
         managerFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -244,6 +274,13 @@ public class MainManage extends JFrame {
         btnSwitchToReader.setBorderPainted(false);
         btnSwitchToReader.setFocusPainted(false);
         btnSwitchToReader.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        // Thêm icon cho nút
+        ImageIcon switchIcon = new ImageIcon(getClass().getResource("/icons/switch.png"));
+        Image switchImg = switchIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+        btnSwitchToReader.setIcon(new ImageIcon(switchImg));
+        btnSwitchToReader.setIconTextGap(8); // Khoảng cách giữa icon và text
+
         btnSwitchToReader.addActionListener(e -> {
             managerFrame.dispose();
             initReaderUI();
@@ -253,16 +290,42 @@ public class MainManage extends JFrame {
         
         // Tạo tabbed pane
         JTabbedPane tabbedPane = new JTabbedPane();
-        tabbedPane.addTab("Quản lý bài viết", new ListBlog());
-        tabbedPane.addTab("Quản lý người dùng", new ListUsers());
-        tabbedPane.addTab("Thống kê", new StatisticsBlog());
-        tabbedPane.addTab("Thông tin cá nhân", new ProfileAdmin(userId));
+        
+        // Thêm icon cho từng tab
+        ImageIcon blogIcon = new ImageIcon(getClass().getResource("/icons/blogs.png"));
+        Image blogImg = blogIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+        tabbedPane.addTab("Quản lý bài viết", new ImageIcon(blogImg), new ListBlog());
+        
+        ImageIcon categoryIcon = new ImageIcon(getClass().getResource("/icons/category.png"));
+        Image categoryImg = categoryIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+        tabbedPane.addTab("Quản lý thể loại", new ImageIcon(categoryImg), new ListCategory());
+        
+        ImageIcon userIcon = new ImageIcon(getClass().getResource("/icons/users.png"));
+        Image userImg = userIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+        tabbedPane.addTab("Quản lý người dùng", new ImageIcon(userImg), new ListUsers());
+        
+        ImageIcon statsIcon = new ImageIcon(getClass().getResource("/icons/statistics.png"));
+        Image statsImg = statsIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+        tabbedPane.addTab("Thống kê", new ImageIcon(statsImg), new StatisticsBlog());
+        
+        ImageIcon profileIcon = new ImageIcon(getClass().getResource("/icons/profile.png"));
+        Image profileImg = profileIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+        tabbedPane.addTab("Thông tin cá nhân", new ImageIcon(profileImg), new ProfileAdmin(adminId));
         
         mainPanel.add(headerPanel, BorderLayout.NORTH);
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
         
         managerFrame.add(mainPanel);
         managerFrame.setVisible(true);
+    }
+
+    // Phương thức để lấy thông tin đăng nhập đã lưu cho quản lý
+    private String getSavedManagerEmail() {
+        return Preferences.userRoot().get("manager_email", null);
+    }
+
+    private String getSavedManagerPassword() {
+        return Preferences.userRoot().get("manager_password", null);
     }
 
     public static void main(String[] args) {
