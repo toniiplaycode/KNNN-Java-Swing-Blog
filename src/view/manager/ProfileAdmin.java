@@ -11,40 +11,42 @@ import java.util.prefs.Preferences;
 
 public class ProfileAdmin extends JPanel {
     private static final long serialVersionUID = 1L;
-    private JTextField txtUsername, txtEmail, txtAddress;
-    private JPasswordField txtCurrentPassword, txtNewPassword, txtConfirmPassword;
-    private JRadioButton rbtnMale, rbtnFemale;
-    private ButtonGroup genderGroup;
-    private JButton btnUpdate, btnChangePassword, btnLogout;
-    private Connection connection;
-    private int userId; // Store current user ID
+    private JTextField txtUsername, txtEmail, txtAddress; // Các trường nhập liệu thông tin cá nhân
+    private JPasswordField txtCurrentPassword, txtNewPassword, txtConfirmPassword; // Các trường nhập mật khẩu
+    private JRadioButton rbtnMale, rbtnFemale; // Radio button chọn giới tính
+    private ButtonGroup genderGroup; // Nhóm radio button giới tính
+    private JButton btnUpdate, btnChangePassword, btnLogout; // Các nút chức năng
+    private Connection connection; // Kết nối database
+    private int userId; // Lưu trữ ID của người dùng hiện tại
     
     public ProfileAdmin(int userId) {
         this.userId = userId;
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(20, 20, 20, 20));
         
-        // Create main panel
+        // Tạo panel chính
         JPanel mainPanel = new JPanel(new BorderLayout(20, 20));
         
-        // Left panel for avatar and basic info
+        // Panel bên trái chứa thông tin cơ bản và avatar
         JPanel leftPanel = createLeftPanel();
         
-        // Right panel for password change
+        // Panel bên phải chứa phần đổi mật khẩu
         JPanel rightPanel = createRightPanel();
         
-        // Add panels to main panel
+        // Thêm các panel vào panel chính
         mainPanel.add(leftPanel, BorderLayout.CENTER);
         mainPanel.add(rightPanel, BorderLayout.EAST);
         
         add(mainPanel, BorderLayout.CENTER);
         
-        // Load user data
+        // Tải dữ liệu người dùng
         loadUserData();
     }
     
+    // Tạo panel bên trái chứa thông tin cá nhân
     private JPanel createLeftPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
+        // Tạo border có tiêu đề cho panel
         panel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(new Color(200, 200, 200)),
             "Thông tin cá nhân",
@@ -53,22 +55,18 @@ public class ProfileAdmin extends JPanel {
             new Font("Segoe UI", Font.BOLD, 14)
         ));
         
-        // Form panel
+        // Tạo form panel sử dụng GridBagLayout
         JPanel formPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(5, 5, 5, 5);
         
-        // Username
+        // Thêm các trường thông tin vào form
         addFormField(formPanel, "Tên đăng nhập:", txtUsername = new JTextField(), gbc, 0);
-        
-        // Email
         addFormField(formPanel, "Email:", txtEmail = new JTextField(), gbc, 1);
-        
-        // Address
         addFormField(formPanel, "Địa chỉ:", txtAddress = new JTextField(), gbc, 2);
         
-        // Gender
+        // Tạo panel chọn giới tính
         JPanel genderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         rbtnMale = new JRadioButton("Male");
         rbtnFemale = new JRadioButton("Female");
@@ -79,31 +77,34 @@ public class ProfileAdmin extends JPanel {
         genderPanel.add(rbtnFemale);
         addFormField(formPanel, "Giới tính:", genderPanel, gbc, 3);
         
-        // Update button panel
+        // Tạo panel chứa các nút chức năng
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         
-        // Update Profile button
+        // Tạo và style nút cập nhật thông tin
         btnUpdate = new JButton("Cập nhật thông tin");
         styleButton(btnUpdate, new Color(52, 152, 219));
         btnUpdate.addActionListener(e -> updateProfile());
         
-        // Logout button
+        // Tạo và style nút đăng xuất
         btnLogout = new JButton("Đăng xuất");
-        styleButton(btnLogout, new Color(231, 76, 60)); // Màu đỏ cho nút logout
+        styleButton(btnLogout, new Color(231, 76, 60));
         btnLogout.addActionListener(e -> logout());
         
+        // Thêm các nút vào panel
         buttonPanel.add(btnUpdate);
         buttonPanel.add(btnLogout);
         
-        // Add components to panel
+        // Thêm các thành phần vào panel chính
         panel.add(formPanel, BorderLayout.CENTER);
         panel.add(buttonPanel, BorderLayout.SOUTH);
         
         return panel;
     }
     
+    // Tạo panel bên phải chứa phần đổi mật khẩu
     private JPanel createRightPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
+        // Tạo border có tiêu đề cho panel
         panel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(new Color(200, 200, 200)),
             "Thông tin cá nhân",
@@ -113,35 +114,36 @@ public class ProfileAdmin extends JPanel {
         ));
         panel.setPreferredSize(new Dimension(300, 0));
         
+        // Tạo panel chứa form đổi mật khẩu
         JPanel passwordPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(5, 5, 5, 5);
         
-        // Current password
+        // Thêm các trường mật khẩu vào form
         addFormField(passwordPanel, "Mật khẩu hiện tại:", txtCurrentPassword = new JPasswordField(), gbc, 0);
-        
-        // New password
         addFormField(passwordPanel, "Mật khẩu mới:", txtNewPassword = new JPasswordField(), gbc, 1);
-        
-        // Confirm password
         addFormField(passwordPanel, "Xác nhận mật khẩu:", txtConfirmPassword = new JPasswordField(), gbc, 2);
         
-        // Change password button
+        // Tạo và style nút đổi mật khẩu
         btnChangePassword = new JButton("Đổi mật khẩu");
         styleButton(btnChangePassword, new Color(46, 204, 113));
         btnChangePassword.addActionListener(e -> changePassword());
         
+        // Tạo panel chứa nút đổi mật khẩu
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.add(btnChangePassword);
         
+        // Thêm các thành phần vào panel chính
         panel.add(passwordPanel, BorderLayout.CENTER);
         panel.add(buttonPanel, BorderLayout.SOUTH);
         
         return panel;
     }
     
+    // Thêm trường dữ liệu vào form
     private void addFormField(JPanel panel, String label, JComponent field, GridBagConstraints gbc, int row) {
+        // Thiết lập vị trí và trọng số cho label
         gbc.gridx = 0;
         gbc.gridy = row;
         gbc.weightx = 0.1;
@@ -149,13 +151,16 @@ public class ProfileAdmin extends JPanel {
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
         panel.add(lbl, gbc);
         
+        // Thiết lập vị trí và trọng số cho trường nhập liệu
         gbc.gridx = 1;
         gbc.weightx = 0.9;
         field.setPreferredSize(new Dimension(200, 25));
         panel.add(field, gbc);
     }
     
+    // Tạo style cho nút
     private void styleButton(JButton button, Color bgColor) {
+        // Thiết lập font và màu sắc
         button.setFont(new Font("Segoe UI", Font.BOLD, 12));
         button.setForeground(Color.WHITE);
         button.setBackground(bgColor);
@@ -163,10 +168,11 @@ public class ProfileAdmin extends JPanel {
         button.setBorderPainted(false);
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // Thêm padding
+        // Thiết lập kích thước và padding
         button.setPreferredSize(new Dimension(120, 35));
         button.setMargin(new Insets(5, 15, 5, 15));
         
+        // Thêm hiệu ứng hover
         button.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent e) {
                 button.setBackground(bgColor.darker());
@@ -242,7 +248,7 @@ public class ProfileAdmin extends JPanel {
             
             connection = DBConnection.getConnection();
             
-            // Verify current password
+            // Xác thực mật khẩu hiện tại
             String verifyQuery = "SELECT password FROM tbl_admin WHERE id = ?";
             PreparedStatement verifyPs = connection.prepareStatement(verifyQuery);
             verifyPs.setInt(1, userId);
@@ -259,7 +265,7 @@ public class ProfileAdmin extends JPanel {
                 }
             }
             
-            // Update password
+            // Cập nhật mật khẩu mới
             String updateQuery = "UPDATE tbl_admin SET password = ? WHERE id = ?";
             PreparedStatement updatePs = connection.prepareStatement(updateQuery);
             updatePs.setString(1, new String(txtNewPassword.getPassword()));
@@ -282,25 +288,30 @@ public class ProfileAdmin extends JPanel {
         }
     }
     
+    // Kiểm tra dữ liệu thông tin cá nhân
     private boolean validateProfileInput() {
         String username = txtUsername.getText().trim();
         String email = txtEmail.getText().trim();
         
+        // Kiểm tra tên đăng nhập
         if (username.isEmpty()) {
             showError("Tên đăng nhập là bắt buộc");
             return false;
         }
         
+        // Kiểm tra email
         if (email.isEmpty()) {
             showError("Email là bắt buộc");
             return false;
         }
         
+        // Kiểm tra định dạng email
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
             showError("Định dạng email không hợp lệ");
             return false;
         }
         
+        // Kiểm tra giới tính
         if (!rbtnMale.isSelected() && !rbtnFemale.isSelected()) {
             showError("Vui lòng chọn giới tính");
             return false;
@@ -309,26 +320,31 @@ public class ProfileAdmin extends JPanel {
         return true;
     }
     
+    // Kiểm tra dữ liệu mật khẩu
     private boolean validatePasswordInput() {
         String currentPassword = new String(txtCurrentPassword.getPassword());
         String newPassword = new String(txtNewPassword.getPassword());
         String confirmPassword = new String(txtConfirmPassword.getPassword());
         
+        // Kiểm tra mật khẩu hiện tại
         if (currentPassword.isEmpty()) {
             showError("Mật khẩu hiện tại là bắt buộc");
             return false;
         }
         
+        // Kiểm tra mật khẩu mới
         if (newPassword.isEmpty()) {
             showError("Mật khẩu mới là bắt buộc");
             return false;
         }
         
+        // Kiểm tra xác nhận mật khẩu
         if (confirmPassword.isEmpty()) {
             showError("Xác nhận mật khẩu là bắt buộc");
             return false;
         }
         
+        // Kiểm tra mật khẩu mới và xác nhận mật khẩu có khớp nhau
         if (!newPassword.equals(confirmPassword)) {
             showError("Mật khẩu mới và xác nhận mật khẩu không khớp");
             return false;
@@ -365,12 +381,12 @@ public class ProfileAdmin extends JPanel {
             prefs.remove("manager_email");
             prefs.remove("manager_password");
             
-            // Tìm JFrame cha
+            // Tìm JFrame cha và đóng cửa sổ hiện tại
             Window window = SwingUtilities.getWindowAncestor(this);
             if (window instanceof JFrame) {
-                window.dispose(); // Đóng cửa sổ hiện tại
+                window.dispose();
                 
-                // Hiển thị màn hình login của manager
+                // Hiển thị màn hình đăng nhập
                 EventQueue.invokeLater(() -> {
                     new Login().setVisible(true);
                 });

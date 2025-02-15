@@ -18,20 +18,21 @@ import java.util.Date;
 
 public class ListBlog extends JPanel {
 
+	// Khai báo các thành phần UI
 	private static final long serialVersionUID = 1L;
 	private JTable table;
-	private JTextField txtTitle, txtContent, txtImgLink, txtSearch; // Add txtSearch for search input
+	private JTextField txtTitle, txtContent, txtImgLink, txtSearch;
 	private JButton btnAdd, btnUpdate, btnDelete, btnClear;
 	private DefaultTableModel tableModel;
-	private JPanel detailPanel; // Panel to show blog details
+	private JPanel detailPanel; // Panel hiển thị chi tiết bài viết
 	private Connection connection;
 	private JComboBox<Author> cboAuthor;
 	private JComboBox<String> cboMonth, cboYear, cboSort;
-	private JTextField txtDate; // Thay thế JDateChooser
+	private JTextField txtDate;
 	private JButton btnFilter, btnClearFilter;
-	private JPanel searchPanel; // Thêm biến instance
+	private JPanel searchPanel;
 
-	// Thêm class Author để lưu trữ thông tin tác giả
+	// Class lưu trữ thông tin tác giả
 	private class Author {
 		private int id;
 		private String username;
@@ -55,81 +56,77 @@ public class ListBlog extends JPanel {
 		}
 	}
 
+	// Constructor - Khởi tạo giao diện
 	public ListBlog() {
-		// Set FlatLaf look and feel for the UI
+		// Thiết lập giao diện FlatLaf
 		try {
-			UIManager.setLookAndFeel(new FlatLightLaf()); // Use FlatLightLaf theme
+			UIManager.setLookAndFeel(new FlatLightLaf());
 		} catch (UnsupportedLookAndFeelException e) {
 			e.printStackTrace();
 		}
 
-		setLayout(new BorderLayout()); // Use BorderLayout for resizing components
+		setLayout(new BorderLayout());
 
-		// Initialize table with columns: id, user_id, title, content, image link,
-		// created_at, and Edit
+		// Khởi tạo model cho bảng với các cột
 		tableModel = new DefaultTableModel(
-				new Object[] { "ID", "User ID", "Title", "Content", "Image Link", "Created At", "Edit" }, 0) {
+				new Object[] { "ID", "User ID", "Tiêu đề", "Nội dung", "Link ảnh", "Ngày tạo", "Thao tác" }, 0) {
 			@Override
 			public boolean isCellEditable(int row, int column) {
-				return column == 6; // Chỉ cho phép edit cột "Edit"
+				return column == 6; // Chỉ cho phép edit cột "Thao tác"
 			}
 		};
 		table = new JTable(tableModel);
 
-		// Create Search panel above the table (top position)
+		// Tạo panel tìm kiếm
 		searchPanel = new JPanel(new BorderLayout());
 		txtSearch = new JTextField();
 		txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 		searchPanel.add(new JLabel("Tìm kiếm: "), BorderLayout.WEST);
 		searchPanel.add(txtSearch, BorderLayout.CENTER);
 		searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-		add(searchPanel, BorderLayout.NORTH); // Move the search panel to the top (NORTH)
+		add(searchPanel, BorderLayout.NORTH);
 
-		// Apply FlatLaf look and feel for JTable
-		table.setRowHeight(30); // Adjust row height for readability
-		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); // Single row selection
+		// Tùy chỉnh giao diện bảng
+		table.setRowHeight(30);
+		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		table.setFillsViewportHeight(true);
-		table.setBackground(Color.WHITE); // White background for table
-		table.getTableHeader().setBackground(Color.WHITE); // Table header background color
+		table.setBackground(Color.WHITE);
+		table.getTableHeader().setBackground(Color.WHITE);
+		table.setSelectionBackground(new Color(70, 130, 180));
+		table.setSelectionForeground(Color.WHITE);
 
-		// Set row selection background color to green
-		table.setSelectionBackground(new Color(70, 130, 180)); // Green when row is selected
-		table.setSelectionForeground(Color.WHITE); // White text for selected row
-
-		// Create JScrollPane to wrap the JTable
+		// Tạo thanh cuộn cho bảng
 		JScrollPane scrollPane = new JScrollPane(table);
 
-		// Create the detail panel where blog details will be shown
+		// Tạo panel chi tiết bài viết
 		detailPanel = new JPanel();
 		detailPanel.setLayout(new BorderLayout());
 
-		// Create a JSplitPane to separate table and details panel
+		// Tạo SplitPane để chia màn hình thành 2 phần
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, scrollPane, detailPanel);
-		splitPane.setDividerLocation(600); // Adjust the divider to fit your needs
+		splitPane.setDividerLocation(600);
 		add(splitPane, BorderLayout.CENTER);
 
-		// Add DocumentListener to the search input field
+		// Thêm chức năng tìm kiếm realtime
 		txtSearch.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
 			public void insertUpdate(DocumentEvent e) {
 				searchBlogs(txtSearch.getText());
 			}
-
 			@Override
 			public void removeUpdate(DocumentEvent e) {
 				searchBlogs(txtSearch.getText());
 			}
-
 			@Override
 			public void changedUpdate(DocumentEvent e) {
 				searchBlogs(txtSearch.getText());
 			}
 		});
 
-		// Thay đổi phần input panel để có giao diện đẹp hơn
+		// Thiết lập panel nhập liệu
 		setupInputPanel();
 
-		// Add MouseListener for table row selection
+		// Thêm sự kiện click cho bảng
 		table.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -148,23 +145,23 @@ public class ListBlog extends JPanel {
 			}
 		});
 
-		// Thêm TableCellRenderer cho cột Edit
+		// Cấu hình cột Edit
 		configureEditButtonColumn();
 
-		// Load all blog entries from the database
+		// Load dữ liệu ban đầu
 		loadtbl_post();
 
-		// Thêm action listeners cho các nút
+		// Thêm sự kiện cho các nút
 		btnAdd.addActionListener(e -> addBlog());
 		btnUpdate.addActionListener(e -> updateBlog());
 		btnDelete.addActionListener(e -> deleteBlog());
 		btnClear.addActionListener(e -> clearFields());
 
-		// Thêm phương thức setupFilterPanel() và gọi nó trong constructor sau phần search panel
+		// Thiết lập panel lọc
 		setupFilterPanel();
 	}
 
-	// Method to load all tbl_post into the table
+	// Phương thức load tất cả bài viết từ database
 	private void loadtbl_post() {
 		try {
 			connection = DBConnection.getConnection();
@@ -172,8 +169,9 @@ public class ListBlog extends JPanel {
 			PreparedStatement ps = connection.prepareStatement(query);
 			ResultSet rs = ps.executeQuery();
 
-			tableModel.setRowCount(0);
+			tableModel.setRowCount(0); // Xóa dữ liệu cũ
 
+			// Thêm từng dòng dữ liệu vào bảng
 			while (rs.next()) {
 				Object[] row = {
 					rs.getInt("id"),
@@ -182,7 +180,7 @@ public class ListBlog extends JPanel {
 					rs.getString("content"),
 					rs.getString("hash_img"),
 					rs.getTimestamp("create_at"),
-					"Edit" // Thay "Show Detail" bằng "Edit"
+					"Edit"
 				};
 				tableModel.addRow(row);
 			}
@@ -195,17 +193,18 @@ public class ListBlog extends JPanel {
 		}
 	}
 
-	// Method to filter the blogs based on the search input
+	// Phương thức tìm kiếm bài viết theo từ khóa
 	private void searchBlogs(String searchQuery) {
 		try {
 			connection = DBConnection.getConnection();
+			// Tạo câu query tìm kiếm với nhiều điều kiện
 			StringBuilder sql = new StringBuilder(
 				"SELECT p.id, p.user_id, p.title, p.content, p.hash_img, p.create_at, u.username " +
 				"FROM tbl_post p JOIN tbl_user u ON p.user_id = u.id WHERE 1=1"
 			);
 			ArrayList<Object> params = new ArrayList<>();
 
-			// Thêm điều kiện tìm kiếm
+			// Thêm điều kiện tìm kiếm theo từ khóa
 			if (!searchQuery.isEmpty()) {
 				sql.append(" AND (p.title LIKE ? OR p.content LIKE ?)");
 				params.add("%" + searchQuery + "%");
@@ -214,7 +213,7 @@ public class ListBlog extends JPanel {
 
 			// Lọc theo tác giả
 			Author selectedAuthor = (Author) cboAuthor.getSelectedItem();
-			if (selectedAuthor != null && selectedAuthor.getId() != 0) { // 0 là ID của "All Authors"
+			if (selectedAuthor != null && selectedAuthor.getId() != 0) {
 				sql.append(" AND u.id = ?");
 				params.add(selectedAuthor.getId());
 			}
@@ -223,7 +222,7 @@ public class ListBlog extends JPanel {
 			String selectedMonth = (String) cboMonth.getSelectedItem();
 			if (selectedMonth != null && !selectedMonth.equals("All Months")) {
 				sql.append(" AND MONTH(p.create_at) = ?");
-				params.add(cboMonth.getSelectedIndex()); // Index 1-12 tương ứng với các tháng
+				params.add(cboMonth.getSelectedIndex());
 			}
 
 			// Lọc theo năm
@@ -233,13 +232,12 @@ public class ListBlog extends JPanel {
 				params.add(Integer.parseInt(selectedYear));
 			}
 
-			// Sắp xếp theo thời gian
+			// Sắp xếp kết quả
 			sql.append(" ORDER BY p.create_at ");
 			sql.append(cboSort.getSelectedIndex() == 0 ? "DESC" : "ASC");
 
+			// Thực thi query
 			PreparedStatement ps = connection.prepareStatement(sql.toString());
-			
-			// Set parameters
 			for (int i = 0; i < params.size(); i++) {
 				ps.setObject(i + 1, params.get(i));
 			}
@@ -247,6 +245,7 @@ public class ListBlog extends JPanel {
 			ResultSet rs = ps.executeQuery();
 			tableModel.setRowCount(0);
 
+			// Hiển thị kết quả tìm kiếm
 			while (rs.next()) {
 				Object[] row = {
 					rs.getInt("id"),
@@ -268,17 +267,17 @@ public class ListBlog extends JPanel {
 		}
 	}
 
-	// Method to add a new blog
+	// Phương thức thêm bài viết mới
 	private void addBlog() {
 		String title = txtTitle.getText().trim();
 		String content = txtContent.getText().trim();
 		String imgLink = txtImgLink.getText().trim();
 		
-		// Validation
+		// Kiểm tra dữ liệu đầu vào
 		if (title.isEmpty() || content.isEmpty()) {
 			JOptionPane.showMessageDialog(this,
-				"Title and Content are required!",
-				"Validation Error",
+				"Tiêu đề và nội dung là bắt buộc!",
+				"Lỗi xác thực",
 				JOptionPane.ERROR_MESSAGE);
 			return;
 		}
@@ -287,7 +286,7 @@ public class ListBlog extends JPanel {
 			connection = DBConnection.getConnection();
 			String query = "INSERT INTO tbl_post (user_id, title, content, hash_img) VALUES (?, ?, ?, ?)";
 			PreparedStatement ps = connection.prepareStatement(query);
-			ps.setInt(1, 1); // Assuming default user_id = 1, modify as needed
+			ps.setInt(1, 1); // Giả sử user_id = 1, cần thay đổi theo logic thực tế
 			ps.setString(2, title);
 			ps.setString(3, content);
 			ps.setString(4, imgLink);
@@ -310,7 +309,7 @@ public class ListBlog extends JPanel {
 		}
 	}
 
-	// Method to update a blog
+	// Phương thức cập nhật bài viết
 	private void updateBlog() {
 		int selectedRow = table.getSelectedRow();
 		if (selectedRow == -1) {
@@ -325,18 +324,21 @@ public class ListBlog extends JPanel {
 		String content = txtContent.getText().trim();
 		String imgLink = txtImgLink.getText().trim();
 		
-		// Validation
+		// Kiểm tra dữ liệu đầu vào
 		if (title.isEmpty() || content.isEmpty()) {
 			JOptionPane.showMessageDialog(this,
-				"Title and Content are required!",
-				"Validation Error",
+				"Tiêu đề và nội dung là bắt buộc!",
+				"Lỗi xác thực",
 				JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 		
 		try {
+			// Lấy ID bài viết từ dòng được chọn
 			int id = (int) tableModel.getValueAt(selectedRow, 0);
 			connection = DBConnection.getConnection();
+			
+			// Cập nhật thông tin bài viết vào database
 			String query = "UPDATE tbl_post SET title = ?, content = ?, hash_img = ? WHERE id = ?";
 			PreparedStatement ps = connection.prepareStatement(query);
 			ps.setString(1, title);
@@ -350,8 +352,8 @@ public class ListBlog extends JPanel {
 					"Cập nhật bài viết thành công!",
 					"Thành công",
 					JOptionPane.INFORMATION_MESSAGE);
-				loadtbl_post();
-				clearFields();
+				loadtbl_post(); // Tải lại danh sách bài viết
+				clearFields(); // Xóa trắng các trường nhập liệu
 			}
 		} catch (SQLException e) {
 			JOptionPane.showMessageDialog(this,
@@ -362,7 +364,7 @@ public class ListBlog extends JPanel {
 		}
 	}
 
-	// Method to delete a blog
+	// Phương thức xóa bài viết
 	private void deleteBlog() {
 		int selectedRow = table.getSelectedRow();
 		if (selectedRow == -1) {
@@ -373,6 +375,7 @@ public class ListBlog extends JPanel {
 			return;
 		}
 		
+		// Hiển thị dialog xác nhận xóa
 		int confirm = JOptionPane.showConfirmDialog(this,
 			"Bạn có chắc chắn muốn xóa bài viết này?",
 			"Xác nhận xóa",
@@ -406,7 +409,7 @@ public class ListBlog extends JPanel {
 		}
 	}
 
-	// Method to clear the input fields
+	// Phương thức xóa trắng các trường nhập liệu
 	private void clearFields() {
 		txtTitle.setText("");
 		txtContent.setText("");
@@ -414,10 +417,9 @@ public class ListBlog extends JPanel {
 		txtDate.setText("");
 	}
 
-	// Method to load blog details into the detail panel when a blog is clicked in
-	// the table
+	// Phương thức tải chi tiết bài viết khi click vào một dòng trong bảng
 	private void loadBlogDetails(int id) {
-		// Hiển thị loading dialog
+		// Hiển thị dialog loading
 		JDialog loadingDialog = new JDialog((Frame) null, "Loading", true);
 		JPanel loadingPanel = new JPanel(new BorderLayout());
 		JLabel loadingLabel = new JLabel("Loading...", SwingConstants.CENTER);
@@ -427,12 +429,12 @@ public class ListBlog extends JPanel {
 		loadingDialog.setSize(150, 100);
 		loadingDialog.setLocationRelativeTo(this);
 
-		// Tạo một worker để tải dữ liệu và tránh làm đông cứng UI
+		// Tạo worker để tải dữ liệu không block UI
 		SwingWorker<Void, Void> worker = new SwingWorker<>() {
 			@Override
 			protected Void doInBackground() throws Exception {
 				try {
-					// Tải dữ liệu từ cơ sở dữ liệu
+					// Tải dữ liệu từ database
 					connection = DBConnection.getConnection();
 					String query = "SELECT p.id, p.title, p.content, p.hash_img, u.username, u.email, u.gender, u.address FROM tbl_post p JOIN tbl_user u ON p.user_id = u.id WHERE p.id = ?";
 					PreparedStatement ps = connection.prepareStatement(query);
@@ -440,7 +442,7 @@ public class ListBlog extends JPanel {
 					ResultSet rs = ps.executeQuery();
 
 					if (rs.next()) {
-						// Lấy dữ liệu chi tiết từ database
+						// Lấy dữ liệu chi tiết
 						String title = rs.getString("title");
 						String content = rs.getString("content");
 						String imgLink = rs.getString("hash_img");
@@ -449,19 +451,20 @@ public class ListBlog extends JPanel {
 						String gender = rs.getString("gender");
 						String address = rs.getString("address");
 
-						// Cập nhật giao diện detailPanel
+						// Cập nhật UI trong EDT
 						SwingUtilities.invokeLater(() -> {
 							detailPanel.removeAll();
-
 							detailPanel.setLayout(new BoxLayout(detailPanel, BoxLayout.Y_AXIS));
 
+							// Hiển thị tiêu đề
 							JPanel titlePanel = new JPanel();
 							JLabel lblTitle = new JLabel("Tiêu đề: " + title);
 							lblTitle.setFont(new Font("Arial", Font.BOLD, 14));
 							titlePanel.add(lblTitle);
 
+							// Hiển thị thông tin tác giả
 							JPanel userPanel = new JPanel();
-							JLabel lblUser = new JLabel("Author: " + username);
+							JLabel lblUser = new JLabel("Tác giả: " + username);
 							lblUser.setFont(new Font("Arial", Font.ITALIC, 12));
 							userPanel.add(lblUser);
 
@@ -469,33 +472,34 @@ public class ListBlog extends JPanel {
 							lblEmail.setFont(new Font("Arial", Font.ITALIC, 12));
 							userPanel.add(lblEmail);
 
-							JLabel lblGender = new JLabel("Gender: " + gender);
+							JLabel lblGender = new JLabel("Giới tính: " + gender);
 							lblGender.setFont(new Font("Arial", Font.ITALIC, 12));
 							userPanel.add(lblGender);
 
-							JLabel lblAddress = new JLabel("Address: " + address);
+							JLabel lblAddress = new JLabel("Địa chỉ: " + address);
 							lblAddress.setFont(new Font("Arial", Font.ITALIC, 12));
 							userPanel.add(lblAddress);
 
+							// Hiển thị nội dung
 							JPanel contentPanel = new JPanel();
 							JLabel lblContent = new JLabel("<html>Nội dung: " + content + "</html>");
 							lblContent.setFont(new Font("Arial", Font.PLAIN, 12));
 							contentPanel.add(lblContent);
 
+							// Thêm các panel vào detail panel
 							detailPanel.add(titlePanel);
 							detailPanel.add(userPanel);
 							detailPanel.add(contentPanel);
 
+							// Hiển thị ảnh nếu có
 							if (imgLink != null && !imgLink.trim().isEmpty()) {
 								JPanel imagePanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-
 								try {
 									ImageIcon imgIcon = new ImageIcon(new URL(imgLink));
 									Image img = imgIcon.getImage();
 									Image scaledImg = img.getScaledInstance(700, 400, Image.SCALE_SMOOTH);
 									imgIcon = new ImageIcon(scaledImg);
 									JLabel imgLabel = new JLabel(imgIcon);
-
 									imagePanel.add(imgLabel);
 									detailPanel.add(imagePanel);
 								} catch (java.net.MalformedURLException e) {
@@ -515,7 +519,7 @@ public class ListBlog extends JPanel {
 
 			@Override
 			protected void done() {
-				loadingDialog.dispose(); // Đóng loading dialog
+				loadingDialog.dispose(); // Đóng dialog loading
 			}
 		};
 
@@ -524,7 +528,7 @@ public class ListBlog extends JPanel {
 		worker.execute();
 	}
 
-	// Thêm phương thức mới để load blog cho việc edit
+	// Phương thức tải bài viết để chỉnh sửa
 	private void loadBlogForEdit(int id) {
 		try {
 			connection = DBConnection.getConnection();
@@ -534,11 +538,12 @@ public class ListBlog extends JPanel {
 			ResultSet rs = ps.executeQuery();
 
 			if (rs.next()) {
+				// Điền dữ liệu vào các trường nhập liệu
 				txtTitle.setText(rs.getString("title"));
 				txtContent.setText(rs.getString("content"));
 				txtImgLink.setText(rs.getString("hash_img"));
 				
-				// Chọn row tương ứng trong table
+				// Chọn dòng tương ứng trong bảng
 				for (int i = 0; i < table.getRowCount(); i++) {
 					if ((int) table.getValueAt(i, 0) == id) {
 						table.setRowSelectionInterval(i, i);
@@ -563,7 +568,7 @@ public class ListBlog extends JPanel {
 		// Panel chứa các trường nhập liệu
 		JPanel fieldsPanel = new JPanel(new GridLayout(3, 2, 10, 10));
 		
-		// Title field
+		// Trường nhập tiêu đề
 		JLabel lblTitle = new JLabel("Tiêu đề:");
 		lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		txtTitle = new JTextField();
@@ -571,7 +576,7 @@ public class ListBlog extends JPanel {
 		fieldsPanel.add(lblTitle);
 		fieldsPanel.add(txtTitle);
 		
-		// Content field
+		// Trường nhập nội dung
 		JLabel lblContent = new JLabel("Nội dung:");
 		lblContent.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		txtContent = new JTextField();
@@ -579,7 +584,7 @@ public class ListBlog extends JPanel {
 		fieldsPanel.add(lblContent);
 		fieldsPanel.add(txtContent);
 		
-		// Image Link field
+		// Trường nhập link ảnh
 		JLabel lblImgLink = new JLabel("Liên kết hình ảnh:");
 		lblImgLink.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		txtImgLink = new JTextField();
@@ -589,24 +594,26 @@ public class ListBlog extends JPanel {
 		
 		inputPanel.add(fieldsPanel, BorderLayout.CENTER);
 		
-		// Button panel
+		// Panel chứa các nút chức năng
 		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
 		
+		// Tạo các nút với style tương ứng
 		btnAdd = createStyledButton("Thêm", new Color(46, 204, 113));
 		btnUpdate = createStyledButton("Cập nhật", new Color(52, 152, 219));
 		btnDelete = createStyledButton("Xóa", new Color(231, 76, 60));
 		btnClear = createStyledButton("Xóa trắng", new Color(149, 165, 166));
 		
+		// Thêm các nút vào panel
 		buttonPanel.add(btnAdd);
 		buttonPanel.add(btnUpdate);
 		buttonPanel.add(btnDelete);
 		buttonPanel.add(btnClear);
 		
 		inputPanel.add(buttonPanel, BorderLayout.SOUTH);
-		
 		add(inputPanel, BorderLayout.SOUTH);
 	}
 
+	// Phương thức tạo nút với style tùy chỉnh
 	private JButton createStyledButton(String text, Color bgColor) {
 		JButton button = new JButton(text);
 		button.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -616,7 +623,7 @@ public class ListBlog extends JPanel {
 		button.setBorderPainted(false);
 		button.setPreferredSize(new Dimension(100, 35));
 		
-		// Hover effect
+		// Thêm hiệu ứng hover cho nút
 		button.addMouseListener(new MouseAdapter() {
 			public void mouseEntered(MouseEvent e) {
 				button.setBackground(bgColor.darker());
@@ -627,6 +634,118 @@ public class ListBlog extends JPanel {
 		});
 		
 		return button;
+	}
+
+	// Phương thức cấu hình cột Edit trong bảng
+	private void configureEditButtonColumn() {
+		// Thiết lập độ rộng cho các cột
+		table.getColumnModel().getColumn(0).setPreferredWidth(50);  // ID
+		table.getColumnModel().getColumn(1).setPreferredWidth(150); // User ID
+		table.getColumnModel().getColumn(2).setPreferredWidth(200); // Tiêu đề
+		table.getColumnModel().getColumn(3).setPreferredWidth(80);  // Nội dung
+		table.getColumnModel().getColumn(4).setPreferredWidth(150); // Link ảnh
+		table.getColumnModel().getColumn(5).setPreferredWidth(200); // Ngày tạo
+		table.getColumnModel().getColumn(6).setPreferredWidth(140); // Thao tác
+
+		// Cấu hình renderer cho cột thao tác
+		table.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
+			@Override
+			public Component getTableCellRendererComponent(JTable table, Object value,
+					boolean isSelected, boolean hasFocus, int row, int column) {
+				// Tạo panel chứa các nút
+				JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 2));
+				panel.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+				
+				// Tạo nút Edit
+				JButton editBtn = new JButton("Edit");
+				editBtn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+				editBtn.setBackground(new Color(52, 152, 219));
+				editBtn.setForeground(Color.WHITE);
+				editBtn.setPreferredSize(new Dimension(55, 24));
+				editBtn.setBorderPainted(false);
+				editBtn.setFocusPainted(false);
+				
+				// Tạo nút Detail
+				JButton detailBtn = new JButton("Detail");
+				detailBtn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+				detailBtn.setBackground(new Color(46, 204, 113));
+				detailBtn.setForeground(Color.WHITE);
+				detailBtn.setPreferredSize(new Dimension(55, 24));
+				detailBtn.setBorderPainted(false);
+				detailBtn.setFocusPainted(false);
+				
+				panel.add(editBtn);
+				panel.add(detailBtn);
+				
+				return panel;
+			}
+		});
+		
+		// Thêm cell editor cho cột thao tác
+		table.getColumnModel().getColumn(6).setCellEditor(new DefaultCellEditor(new JCheckBox()) {
+			private JPanel panel;
+			private JButton editBtn;
+			private JButton detailBtn;
+			
+			{
+				// Khởi tạo các thành phần UI
+				panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 2));
+				
+				editBtn = new JButton("Edit");
+				styleActionButton(editBtn, new Color(52, 152, 219));
+				
+				detailBtn = new JButton("Detail");
+				styleActionButton(detailBtn, new Color(46, 204, 113));
+				
+				panel.add(editBtn);
+				panel.add(detailBtn);
+				
+				// Thêm sự kiện cho nút Edit
+				editBtn.addActionListener(e -> {
+					int row = table.getSelectedRow();
+					if (row != -1) {
+						int id = (int) tableModel.getValueAt(row, 0);
+						loadBlogForEdit(id);
+					}
+					fireEditingStopped();
+				});
+				
+				// Thêm sự kiện cho nút Detail
+				detailBtn.addActionListener(e -> {
+					int row = table.getSelectedRow();
+					if (row != -1) {
+						int id = (int) tableModel.getValueAt(row, 0);
+						loadBlogDetails(id);
+					}
+					fireEditingStopped();
+				});
+			}
+			
+			// Helper method để style các nút thao tác
+			private void styleActionButton(JButton btn, Color bgColor) {
+				btn.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+				btn.setBackground(bgColor);
+				btn.setForeground(Color.WHITE);
+				btn.setPreferredSize(new Dimension(55, 24));
+				btn.setBorderPainted(false);
+				btn.setFocusPainted(false);
+			}
+			
+			@Override
+			public Component getTableCellEditorComponent(JTable table, Object value,
+					boolean isSelected, int row, int column) {
+				panel.setBackground(table.getSelectionBackground());
+				return panel;
+			}
+			
+			@Override
+			public Object getCellEditorValue() {
+				return "Actions";
+			}
+		});
+
+		// Cho phép tự động điều chỉnh kích thước cột
+		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 	}
 
 	// Thêm phương thức mới để cấu hình cột Edit
@@ -645,18 +764,19 @@ public class ListBlog extends JPanel {
 
 	// Thêm phương thức mới để setupFilterPanel
 	private void setupFilterPanel() {
+		// Tạo panel chứa các thành phần lọc
 		JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
 		filterPanel.setBorder(new EmptyBorder(0, 10, 10, 10));
 		
-		// Author filter
+		// Lọc theo tác giả
 		JLabel lblAuthor = new JLabel("Tác giả:");
 		lblAuthor.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		cboAuthor = new JComboBox<>();
 		cboAuthor.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 		cboAuthor.setPreferredSize(new Dimension(150, 25));
-		loadAuthors();
+		loadAuthors(); // Tải danh sách tác giả
 		
-		// Month filter
+		// Lọc theo tháng
 		JLabel lblMonth = new JLabel("Tháng:");
 		lblMonth.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		cboMonth = new JComboBox<>(new String[] {
@@ -666,22 +786,22 @@ public class ListBlog extends JPanel {
 		cboMonth.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 		cboMonth.setPreferredSize(new Dimension(100, 25));
 		
-		// Year filter
+		// Lọc theo năm
 		JLabel lblYear = new JLabel("Năm:");
 		lblYear.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		cboYear = new JComboBox<>();
 		cboYear.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 		cboYear.setPreferredSize(new Dimension(80, 25));
-		loadYears();
+		loadYears(); // Tải danh sách năm
 		
-		// Sort order
+		// Tùy chọn sắp xếp
 		JLabel lblSort = new JLabel("Sắp xếp:");
 		lblSort.setFont(new Font("Segoe UI", Font.BOLD, 12));
 		cboSort = new JComboBox<>(new String[] {"Newest First", "Oldest First"});
 		cboSort.setFont(new Font("Segoe UI", Font.PLAIN, 12));
 		cboSort.setPreferredSize(new Dimension(100, 25));
 		
-		// Filter buttons
+		// Nút lọc và xóa bộ lọc
 		btnFilter = createStyledButton("Lọc", new Color(52, 152, 219));
 		btnFilter.setPreferredSize(new Dimension(80, 25));
 		btnFilter.addActionListener(e -> applyFilters());
@@ -690,6 +810,7 @@ public class ListBlog extends JPanel {
 		btnClearFilter.setPreferredSize(new Dimension(80, 25));
 		btnClearFilter.addActionListener(e -> clearFilters());
 		
+		// Thêm các thành phần vào panel lọc
 		filterPanel.add(lblAuthor);
 		filterPanel.add(cboAuthor);
 		filterPanel.add(lblMonth);
@@ -701,14 +822,14 @@ public class ListBlog extends JPanel {
 		filterPanel.add(btnFilter);
 		filterPanel.add(btnClearFilter);
 		
-		// Thêm filter panel vào phía trên bảng, dưới search panel
+		// Tạo panel chứa cả search và filter
 		JPanel topPanel = new JPanel(new BorderLayout());
 		topPanel.add(searchPanel, BorderLayout.NORTH);
 		topPanel.add(filterPanel, BorderLayout.CENTER);
 		add(topPanel, BorderLayout.NORTH);
 	}
 
-	// Thêm phương thức để load danh sách tác giả
+	// Phương thức tải danh sách tác giả từ database
 	private void loadAuthors() {
 		try {
 			connection = DBConnection.getConnection();
@@ -716,9 +837,11 @@ public class ListBlog extends JPanel {
 			PreparedStatement ps = connection.prepareStatement(query);
 			ResultSet rs = ps.executeQuery();
 			
+			// Xóa danh sách cũ và thêm lựa chọn mặc định
 			cboAuthor.removeAllItems();
-			cboAuthor.addItem(new Author(0, "All Authors")); // ID = 0 cho All Authors
+			cboAuthor.addItem(new Author(0, "All Authors")); 
 			
+			// Thêm các tác giả vào combobox
 			while (rs.next()) {
 				cboAuthor.addItem(new Author(
 					rs.getInt("id"),
@@ -730,7 +853,7 @@ public class ListBlog extends JPanel {
 		}
 	}
 
-	// Thêm phương thức để load các năm từ database
+	// Phương thức tải danh sách năm từ database
 	private void loadYears() {
 		try {
 			connection = DBConnection.getConnection();
@@ -738,9 +861,11 @@ public class ListBlog extends JPanel {
 			PreparedStatement ps = connection.prepareStatement(query);
 			ResultSet rs = ps.executeQuery();
 			
+			// Xóa danh sách cũ và thêm lựa chọn mặc định
 			cboYear.removeAllItems();
 			cboYear.addItem("All Years");
 			
+			// Thêm các năm vào combobox
 			while (rs.next()) {
 				cboYear.addItem(String.valueOf(rs.getInt("year")));
 			}
@@ -749,19 +874,19 @@ public class ListBlog extends JPanel {
 		}
 	}
 
-	// Thêm phương thức để áp dụng filter
+	// Phương thức áp dụng các bộ lọc đã chọn
 	private void applyFilters() {
 		searchBlogs(txtSearch.getText());
 	}
 
-	// Thêm phương thức để xóa filter
+	// Phương thức xóa tất cả các bộ lọc
 	private void clearFilters() {
 		txtSearch.setText("");
-		cboAuthor.setSelectedIndex(0); // Select "All Authors"
+		cboAuthor.setSelectedIndex(0);     // Chọn "All Authors"
 		cboMonth.setSelectedItem("All Months");
 		cboYear.setSelectedItem("All Years");
-		cboSort.setSelectedIndex(0); // Newest First
-		searchBlogs("");
+		cboSort.setSelectedIndex(0);        // Chọn "Newest First"
+		searchBlogs("");                    // Tải lại danh sách không có bộ lọc
 	}
 
 }

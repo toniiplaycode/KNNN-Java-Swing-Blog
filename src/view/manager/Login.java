@@ -12,19 +12,19 @@ import view.MainManage;
 
 public class Login extends JFrame {
     private static final long serialVersionUID = 1L;
-    private JTextField txtEmail;
-    private JPasswordField txtPassword;
-    private JButton btnLogin;
-    private JCheckBox chkRemember;
-    private Connection connection;
+    private JTextField txtEmail; // Trường nhập email
+    private JPasswordField txtPassword; // Trường nhập mật khẩu
+    private JButton btnLogin; // Nút đăng nhập
+    private JCheckBox chkRemember; // Checkbox ghi nhớ đăng nhập
+    private Connection connection; // Kết nối database
     
     public Login() {
-        // Set up the frame
+        // Thiết lập cấu hình cửa sổ
         setTitle("Blog Management System - Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         
-        // Create main panel with gradient background
+        // Tạo panel chính với nền gradient
         JPanel mainPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
@@ -33,8 +33,8 @@ public class Login extends JFrame {
                 g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
                 int w = getWidth();
                 int h = getHeight();
-                Color color1 = new Color(66, 139, 202);
-                Color color2 = new Color(51, 51, 51);
+                Color color1 = new Color(66, 139, 202); // Màu gradient bắt đầu
+                Color color2 = new Color(51, 51, 51);   // Màu gradient kết thúc
                 GradientPaint gp = new GradientPaint(0, 0, color1, w, h, color2);
                 g2d.setPaint(gp);
                 g2d.fillRect(0, 0, w, h);
@@ -42,7 +42,7 @@ public class Login extends JFrame {
         };
         mainPanel.setLayout(new GridBagLayout());
         
-        // Create login panel
+        // Tạo panel đăng nhập
         JPanel loginPanel = new JPanel();
         loginPanel.setLayout(new BoxLayout(loginPanel, BoxLayout.Y_AXIS));
         loginPanel.setBackground(new Color(255, 255, 255, 240));
@@ -54,15 +54,15 @@ public class Login extends JFrame {
             )
         ));
         
-        // Add logo/title
-        JLabel lblLogo = new JLabel("Login");
+        // Thêm logo và tiêu đề
+        JLabel lblLogo = new JLabel("Đăng nhập admin");
         lblLogo.setFont(new Font("Segoe UI", Font.BOLD, 24));
         lblLogo.setForeground(new Color(51, 51, 51));
         lblLogo.setAlignmentX(Component.CENTER_ALIGNMENT);
         loginPanel.add(lblLogo);
         loginPanel.add(Box.createVerticalStrut(20));
         
-        // Email field
+        // Tạo trường nhập email
         JPanel emailPanel = new JPanel(new BorderLayout(10, 0));
         emailPanel.setOpaque(false);
         JLabel lblEmail = new JLabel("Email");
@@ -86,10 +86,10 @@ public class Login extends JFrame {
             }
         });
         
-        // Password field
+        // Tạo trường nhập mật khẩu
         JPanel passwordPanel = new JPanel(new BorderLayout(10, 0));
         passwordPanel.setOpaque(false);
-        JLabel lblPassword = new JLabel("Password");
+        JLabel lblPassword = new JLabel("Mật khẩu");
         lblPassword.setFont(new Font("Segoe UI", Font.BOLD, 12));
         txtPassword = new JPasswordField();
         txtPassword.setPreferredSize(new Dimension(200, 30));
@@ -102,18 +102,18 @@ public class Login extends JFrame {
         loginPanel.add(passwordPanel);
         loginPanel.add(Box.createVerticalStrut(5));
         
-        // Remember me checkbox
+        // Tạo checkbox ghi nhớ đăng nhập
         JPanel rememberPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         rememberPanel.setOpaque(false);
-        chkRemember = new JCheckBox("Remember me");
+        chkRemember = new JCheckBox("Lưu tài khoản");
         chkRemember.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         chkRemember.setOpaque(false);
         rememberPanel.add(chkRemember);
         loginPanel.add(rememberPanel);
         loginPanel.add(Box.createVerticalStrut(20));
         
-        // Login button
-        btnLogin = new JButton("Login");
+        // Tạo nút đăng nhập
+        btnLogin = new JButton("Đăng nhập");
         btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnLogin.setForeground(Color.WHITE);
         btnLogin.setBackground(new Color(66, 139, 202));
@@ -122,7 +122,7 @@ public class Login extends JFrame {
         btnLogin.setPreferredSize(new Dimension(200, 35));
         btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // Hover effect for login button
+        // Thêm hiệu ứng hover cho nút đăng nhập
         btnLogin.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -135,19 +135,19 @@ public class Login extends JFrame {
             }
         });
         
-        // Center the login button
+        // Căn giữa nút đăng nhập
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.setOpaque(false);
         buttonPanel.add(btnLogin);
         loginPanel.add(buttonPanel);
         
-        // Add login panel to main panel
+        // Thêm panel đăng nhập vào panel chính
         mainPanel.add(loginPanel);
         
-        // Add action listener for login button
+        // Thêm sự kiện cho nút đăng nhập
         btnLogin.addActionListener(e -> signIn());
         
-        // Add key listener for Enter key
+        // Thêm sự kiện phím Enter
         KeyAdapter enterKeyListener = new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -159,28 +159,32 @@ public class Login extends JFrame {
         txtEmail.addKeyListener(enterKeyListener);
         txtPassword.addKeyListener(enterKeyListener);
         
-        // Set up the frame
+        // Thiết lập cửa sổ
         setContentPane(mainPanel);
         pack();
         setSize(400, 500);
         setLocationRelativeTo(null);
     }
     
+    // Xử lý đăng nhập
     private void signIn() {
         String email = txtEmail.getText().trim();
         String password = new String(txtPassword.getPassword());
         
+        // Kiểm tra dữ liệu nhập vào
         if (email.isEmpty() || password.isEmpty()) {
             showError("Vui lòng nhập email và mật khẩu");
             return;
         }
         
+        // Kiểm tra định dạng email
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
             showError("Định dạng email không hợp lệ");
             return;
         }
         
         try {
+            // Kết nối database và kiểm tra thông tin đăng nhập
             connection = DBConnection.getConnection();
             String query = "SELECT * FROM tbl_admin WHERE email = ?";
             PreparedStatement ps = connection.prepareStatement(query);
@@ -203,6 +207,7 @@ public class Login extends JFrame {
                         prefs.remove("manager_password");
                     }
                     
+                    // Chuyển đến màn hình chính
                     dispose();
                     new MainManage(adminId).showManagerUI(adminId);
                 } else {
@@ -217,6 +222,7 @@ public class Login extends JFrame {
         }
     }
     
+    // Hiển thị thông báo lỗi
     private void showError(String message) {
         JOptionPane.showMessageDialog(
             this,
@@ -226,13 +232,16 @@ public class Login extends JFrame {
         );
     }
     
+    // Hàm main khởi động ứng dụng
     public static void main(String[] args) {
         try {
+            // Thiết lập giao diện theo hệ điều hành
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
         }
         
+        // Khởi tạo giao diện đăng nhập
         SwingUtilities.invokeLater(() -> {
             new Login().setVisible(true);
         });

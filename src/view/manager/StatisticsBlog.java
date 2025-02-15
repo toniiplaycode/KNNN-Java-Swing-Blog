@@ -117,6 +117,7 @@ public class StatisticsBlog extends JPanel {
                 connection = DBConnection.getConnection();
             }
             
+            // Truy vấn lấy top 10 người dùng có nhiều bài viết nhất
             String query = "SELECT u.username, COUNT(p.id) as post_count " +
                           "FROM tbl_user u LEFT JOIN tbl_post p ON u.id = p.user_id " +
                           "GROUP BY u.id, u.username ORDER BY post_count DESC LIMIT 10";
@@ -124,6 +125,7 @@ public class StatisticsBlog extends JPanel {
             Statement stmt = connection.createStatement();
             ResultSet rs = stmt.executeQuery(query);
             
+            // Thêm dữ liệu vào dataset
             while (rs.next()) {
                 dataset.addValue(rs.getInt("post_count"), 
                                "Posts", 
@@ -132,20 +134,22 @@ public class StatisticsBlog extends JPanel {
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error creating bar chart: " + e.getMessage(),
+                "Lỗi khi tạo biểu đồ cột: " + e.getMessage(),
                 "Lỗi cơ sở dữ liệu",
                 JOptionPane.ERROR_MESSAGE);
         }
         
+        // Tạo biểu đồ cột
         JFreeChart chart = ChartFactory.createBarChart(
-            "Top 10 Users by Posts",
-            "Users",
-            "Number of Posts",
+            "Top 10 người dùng theo số bài viết",
+            "Người dùng",
+            "Số bài viết",
             dataset,
             PlotOrientation.VERTICAL,
             false, true, false
         );
         
+        // Tùy chỉnh giao diện biểu đồ
         customizeChart(chart);
         return chart;
     }
@@ -158,8 +162,9 @@ public class StatisticsBlog extends JPanel {
             }
             
             String query;
+            // Chọn query dựa trên loại biểu đồ
             if (title.contains("Likes")) {
-                // Query đếm số lượt like cho bài viết của mỗi user
+                // Truy vấn đếm số lượt thích cho bài viết của mỗi người dùng
                 query = """
                     SELECT u.username, COUNT(*) as count 
                     FROM tbl_user u 
@@ -171,7 +176,7 @@ public class StatisticsBlog extends JPanel {
                     LIMIT 5
                 """;
             } else {
-                // Query đếm số lượt comment cho bài viết của mỗi user
+                // Truy vấn đếm số bình luận cho bài viết của mỗi người dùng
                 query = """
                     SELECT u.username, COUNT(*) as count 
                     FROM tbl_user u 
@@ -184,6 +189,7 @@ public class StatisticsBlog extends JPanel {
                 """;
             }
             
+            // Thực thi truy vấn và thêm dữ liệu vào dataset
             Statement stmt = connection.createStatement();
             ResultSet rs = stmt.executeQuery(query);
             
@@ -196,11 +202,12 @@ public class StatisticsBlog extends JPanel {
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error creating pie chart: " + e.getMessage(),
+                "Lỗi khi tạo biểu đồ tròn: " + e.getMessage(),
                 "Lỗi cơ sở dữ liệu",
                 JOptionPane.ERROR_MESSAGE);
         }
         
+        // Tạo biểu đồ tròn
         JFreeChart chart = ChartFactory.createPieChart(
             title,
             dataset,
@@ -209,34 +216,37 @@ public class StatisticsBlog extends JPanel {
             false
         );
         
+        // Tùy chỉnh giao diện biểu đồ
         customizeChart(chart);
         return chart;
     }
     
     private void customizeChart(JFreeChart chart) {
-        // Tùy chỉnh màu sắc và font chữ
+        // Thiết lập màu nền cho biểu đồ
         chart.setBackgroundPaint(Color.white);
         
-        // Tùy chỉnh plot
+        // Tùy chỉnh plot dựa trên loại biểu đồ
         if (chart.getPlot() instanceof CategoryPlot) {
+            // Tùy chỉnh cho biểu đồ cột
             CategoryPlot plot = (CategoryPlot) chart.getPlot();
             plot.setBackgroundPaint(Color.white);
             plot.setRangeGridlinePaint(Color.lightGray);
             plot.getRenderer().setSeriesPaint(0, new Color(52, 152, 219));
         } else if (chart.getPlot() instanceof PiePlot) {
+            // Tùy chỉnh cho biểu đồ tròn
             PiePlot plot = (PiePlot) chart.getPlot();
             plot.setBackgroundPaint(Color.white);
             plot.setLabelFont(new Font("Segoe UI", Font.PLAIN, 12));
             plot.setLabelBackgroundPaint(new Color(255, 255, 255, 200));
         }
         
-        // Tùy chỉnh title
+        // Tùy chỉnh font chữ cho tiêu đề
         chart.getTitle().setFont(new Font("Segoe UI", Font.BOLD, 14));
     }
 
     private void loadStatistics() {
         try {
-            // Load tổng số người dùng
+            // Đếm tổng số người dùng
             String userQuery = "SELECT COUNT(*) as total FROM tbl_user";
             Statement stmt = connection.createStatement();
             ResultSet rs = stmt.executeQuery(userQuery);
@@ -244,7 +254,7 @@ public class StatisticsBlog extends JPanel {
                 lblTotalUsers.setText(String.valueOf(rs.getInt("total")));
             }
             
-            // Load tổng số bài viết
+            // Đếm tổng số bài viết
             String blogQuery = "SELECT COUNT(*) as total FROM tbl_post";
             rs = stmt.executeQuery(blogQuery);
             if (rs.next()) {
@@ -254,19 +264,24 @@ public class StatisticsBlog extends JPanel {
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error loading statistics: " + e.getMessage(),
+                "Lỗi khi tải thống kê: " + e.getMessage(),
                 "Lỗi cơ sở dữ liệu",
                 JOptionPane.ERROR_MESSAGE);
         }
     }
     
-    // Phương thức để refresh thống kê
+    // Làm mới dữ liệu thống kê
     public void refreshStatistics() {
         try {
+            // Kiểm tra và tạo kết nối mới nếu cần
             if (connection == null || connection.isClosed()) {
                 connection = DBConnection.getConnection();
             }
+            
+            // Tải lại dữ liệu thống kê
             loadStatistics();
+            
+            // Cập nhật lại giao diện
             removeAll();
             add(createOverviewPanel(), BorderLayout.NORTH);
             add(createChartsPanel(), BorderLayout.CENTER);
@@ -275,7 +290,7 @@ public class StatisticsBlog extends JPanel {
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this,
-                "Error refreshing statistics: " + e.getMessage(),
+                "Lỗi khi làm mới thống kê: " + e.getMessage(),
                 "Lỗi cơ sở dữ liệu",
                 JOptionPane.ERROR_MESSAGE);
         }

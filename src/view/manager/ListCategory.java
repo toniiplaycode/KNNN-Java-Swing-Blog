@@ -9,17 +9,19 @@ import java.sql.*;
 import utils.DBConnection;
 
 public class ListCategory extends JPanel {
+    // Khai báo các thành phần UI
     private JTable table;
     private JTextField txtTitle, txtDescription, txtSearch;
     private JButton btnAdd, btnUpdate, btnDelete, btnClear;
     private DefaultTableModel tableModel;
     private Connection connection;
-    private int selectedId = -1;
+    private int selectedId = -1; // ID của thể loại đang được chọn
 
+    // Constructor - Khởi tạo giao diện quản lý thể loại
     public ListCategory() {
         setLayout(new BorderLayout());
 
-        // Initialize table model
+        // Khởi tạo model cho bảng với các cột
         tableModel = new DefaultTableModel(
             new Object[]{"ID", "Tiêu đề", "Mô tả"}, 0) {
             @Override
@@ -29,7 +31,7 @@ public class ListCategory extends JPanel {
         };
         table = new JTable(tableModel);
 
-        // Create search panel
+        // Tạo panel tìm kiếm
         JPanel searchPanel = new JPanel(new BorderLayout());
         txtSearch = new JTextField();
         txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -38,7 +40,7 @@ public class ListCategory extends JPanel {
         searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         add(searchPanel, BorderLayout.NORTH);
 
-        // Style the table
+        // Tùy chỉnh giao diện bảng
         table.setRowHeight(30);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setFillsViewportHeight(true);
@@ -47,21 +49,21 @@ public class ListCategory extends JPanel {
         table.setSelectionBackground(new Color(70, 130, 180));
         table.setSelectionForeground(Color.WHITE);
 
-        // Create scroll pane for table
+        // Tạo thanh cuộn cho bảng
         JScrollPane scrollPane = new JScrollPane(table);
         add(scrollPane, BorderLayout.CENTER);
 
-        // Setup input panel
+        // Thiết lập panel nhập liệu
         JPanel inputPanel = new JPanel(new BorderLayout());
         inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Form panel
+        // Panel chứa form nhập liệu
         JPanel formPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(5, 5, 5, 5);
 
-        // Title field
+        // Trường nhập tiêu đề
         gbc.gridx = 0;
         gbc.gridy = 0;
         formPanel.add(new JLabel("Tiêu đề:"), gbc);
@@ -71,7 +73,7 @@ public class ListCategory extends JPanel {
         txtTitle = new JTextField(20);
         formPanel.add(txtTitle, gbc);
 
-        // Description field
+        // Trường nhập mô tả
         gbc.gridx = 0;
         gbc.gridy = 1;
         formPanel.add(new JLabel("Mô tả:"), gbc);
@@ -80,9 +82,10 @@ public class ListCategory extends JPanel {
         txtDescription = new JTextField(20);
         formPanel.add(txtDescription, gbc);
 
-        // Buttons panel
+        // Panel chứa các nút chức năng
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         
+        // Tạo và style các nút
         btnAdd = new JButton("Thêm");
         styleButton(btnAdd, new Color(46, 204, 113));
         
@@ -97,6 +100,7 @@ public class ListCategory extends JPanel {
         btnClear = new JButton("Làm mới");
         styleButton(btnClear, new Color(149, 165, 166));
 
+        // Thêm các nút vào panel
         buttonPanel.add(btnAdd);
         buttonPanel.add(btnUpdate);
         buttonPanel.add(btnDelete);
@@ -107,20 +111,20 @@ public class ListCategory extends JPanel {
 
         add(inputPanel, BorderLayout.SOUTH);
 
-        // Add action listeners
+        // Thêm sự kiện cho các nút
         btnAdd.addActionListener(e -> addCategory());
         btnUpdate.addActionListener(e -> updateCategory());
         btnDelete.addActionListener(e -> deleteCategory());
         btnClear.addActionListener(e -> clearFields());
 
-        // Search functionality
+        // Thêm chức năng tìm kiếm realtime
         txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             public void changedUpdate(javax.swing.event.DocumentEvent e) { searchCategories(); }
             public void removeUpdate(javax.swing.event.DocumentEvent e) { searchCategories(); }
             public void insertUpdate(javax.swing.event.DocumentEvent e) { searchCategories(); }
         });
 
-        // Table selection listener
+        // Xử lý sự kiện khi chọn dòng trong bảng
         table.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = table.getSelectedRow();
@@ -137,9 +141,11 @@ public class ListCategory extends JPanel {
             }
         });
 
+        // Tải dữ liệu ban đầu
         loadCategories();
     }
 
+    // Phương thức tạo style cho nút
     private void styleButton(JButton button, Color color) {
         button.setBackground(color);
         button.setForeground(Color.WHITE);
@@ -150,6 +156,7 @@ public class ListCategory extends JPanel {
         button.setPreferredSize(new Dimension(100, 30));
     }
 
+    // Phương thức tải danh sách thể loại từ database
     private void loadCategories() {
         try {
             connection = DBConnection.getConnection();
@@ -157,7 +164,7 @@ public class ListCategory extends JPanel {
             PreparedStatement ps = connection.prepareStatement(query);
             ResultSet rs = ps.executeQuery();
 
-            tableModel.setRowCount(0);
+            tableModel.setRowCount(0); // Xóa dữ liệu cũ
             while (rs.next()) {
                 tableModel.addRow(new Object[]{
                     rs.getInt("id"),
@@ -174,6 +181,7 @@ public class ListCategory extends JPanel {
         }
     }
 
+    // Phương thức tìm kiếm thể loại
     private void searchCategories() {
         String searchText = txtSearch.getText().trim().toLowerCase();
         try {
@@ -197,10 +205,12 @@ public class ListCategory extends JPanel {
         }
     }
 
+    // Phương thức thêm thể loại mới
     private void addCategory() {
         String title = txtTitle.getText().trim();
         String description = txtDescription.getText().trim();
         
+        // Kiểm tra dữ liệu đầu vào
         if (title.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                 "Vui lòng nhập tiêu đề thể loại",
@@ -234,10 +244,12 @@ public class ListCategory extends JPanel {
         }
     }
 
+    // Phương thức cập nhật thể loại
     private void updateCategory() {
         String title = txtTitle.getText().trim();
         String description = txtDescription.getText().trim();
         
+        // Kiểm tra dữ liệu đầu vào
         if (title.isEmpty()) {
             JOptionPane.showMessageDialog(this,
                 "Vui lòng nhập tiêu đề thể loại",
@@ -272,7 +284,9 @@ public class ListCategory extends JPanel {
         }
     }
 
+    // Phương thức xóa thể loại
     private void deleteCategory() {
+        // Hiển thị dialog xác nhận xóa
         int choice = JOptionPane.showConfirmDialog(this,
             "Bạn có chắc chắn muốn xóa thể loại này?",
             "Xác nhận xóa",
@@ -313,6 +327,7 @@ public class ListCategory extends JPanel {
         }
     }
 
+    // Phương thức xóa trắng các trường nhập liệu
     private void clearFields() {
         txtTitle.setText("");
         txtDescription.setText("");
@@ -322,4 +337,4 @@ public class ListCategory extends JPanel {
         btnUpdate.setEnabled(false);
         btnDelete.setEnabled(false);
     }
-} 
+}

@@ -9,15 +9,18 @@ import utils.DBConnection;
 import org.mindrot.jbcrypt.BCrypt;
 
 public class SignUp extends JFrame {
-    private JTextField txtUsername, txtEmail, txtAddress, txtAvatar;
-    private JPasswordField txtPassword, txtConfirmPassword;
-    private JRadioButton rbtnMale, rbtnFemale;
-    private ButtonGroup genderGroup;
-    private JButton btnRegister, btnBack;
-    private Connection connection;
+    // Khai báo các biến thành viên
+    private JTextField txtUsername, txtEmail, txtAddress, txtAvatar; // Các trường nhập liệu
+    private JPasswordField txtPassword, txtConfirmPassword; // Các trường nhập mật khẩu
+    private JRadioButton rbtnMale, rbtnFemale; // Radio button chọn giới tính
+    private ButtonGroup genderGroup; // Nhóm radio button giới tính
+    private JButton btnRegister, btnBack; // Các nút đăng ký và quay lại
+    private Connection connection; // Kết nối database
     
+    // Khởi tạo giao diện đăng ký
     public SignUp() {
-        setTitle("Sign Up");
+        // Thiết lập cấu hình cửa sổ
+        setTitle("Tạo tài khoản");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         
@@ -52,26 +55,26 @@ public class SignUp extends JFrame {
         ));
         
         // Title
-        JLabel lblTitle = new JLabel("Create Account");
+        JLabel lblTitle = new JLabel("Tạo tài khoản");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 24));
         lblTitle.setForeground(new Color(51, 51, 51));
         lblTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
         registerPanel.add(lblTitle);
         registerPanel.add(Box.createVerticalStrut(20));
         
-        // Form fields
+        // Thêm các trường nhập liệu
         addFormField(registerPanel, "Username", txtUsername = new JTextField());
         addFormField(registerPanel, "Email", txtEmail = new JTextField());
-        addFormField(registerPanel, "Password", txtPassword = new JPasswordField());
-        addFormField(registerPanel, "Confirm Password", txtConfirmPassword = new JPasswordField());
-        addFormField(registerPanel, "Address", txtAddress = new JTextField());
+        addFormField(registerPanel, "Mật khẩu", txtPassword = new JPasswordField());
+        addFormField(registerPanel, "Nhập lại mật khẩu", txtConfirmPassword = new JPasswordField());
+        addFormField(registerPanel, "Địa chỉ", txtAddress = new JTextField());
         addFormField(registerPanel, "Avatar URL", txtAvatar = new JTextField());
         
         // Gender
         JPanel genderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         genderPanel.setOpaque(false);
-        rbtnMale = new JRadioButton("Male");
-        rbtnFemale = new JRadioButton("Female");
+        rbtnMale = new JRadioButton("Nam");
+        rbtnFemale = new JRadioButton("Nữ");
         genderGroup = new ButtonGroup();
         genderGroup.add(rbtnMale);
         genderGroup.add(rbtnFemale);
@@ -80,20 +83,20 @@ public class SignUp extends JFrame {
         
         JPanel genderContainer = new JPanel(new BorderLayout());
         genderContainer.setOpaque(false);
-        genderContainer.add(new JLabel("Gender:"), BorderLayout.NORTH);
+        genderContainer.add(new JLabel("Giới tính:"), BorderLayout.NORTH);
         genderContainer.add(genderPanel, BorderLayout.CENTER);
         registerPanel.add(genderContainer);
         registerPanel.add(Box.createVerticalStrut(15));
         
-        // Buttons
+        // Panel chứa các nút
         JPanel buttonPanel = new JPanel(new GridLayout(2, 1, 0, 10));
         buttonPanel.setOpaque(false);
         
-        btnRegister = new JButton("Register");
+        btnRegister = new JButton("Đăng ký");
         styleButton(btnRegister, new Color(46, 204, 113));
         btnRegister.addActionListener(e -> register());
         
-        btnBack = new JButton("Back to Sign In");
+        btnBack = new JButton("Chuyển sang đăng nhập");
         styleButton(btnBack, new Color(66, 139, 202));
         btnBack.addActionListener(e -> {
             dispose();
@@ -111,27 +114,35 @@ public class SignUp extends JFrame {
         setLocationRelativeTo(null);
     }
     
+    // Thêm trường dữ liệu vào form
     private void addFormField(JPanel panel, String label, JTextField field) {
+        // Tạo container cho trường dữ liệu
         JPanel container = new JPanel(new BorderLayout(10, 5));
         container.setOpaque(false);
         
+        // Tạo và định dạng label
         JLabel lbl = new JLabel(label);
         lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
         
+        // Định dạng trường nhập liệu
         field.setPreferredSize(new Dimension(200, 30));
         field.setBorder(BorderFactory.createCompoundBorder(
             new LineBorder(new Color(200, 200, 200)),
             new EmptyBorder(0, 5, 0, 5)
         ));
         
+        // Thêm vào container
         container.add(lbl, BorderLayout.NORTH);
         container.add(field, BorderLayout.CENTER);
         
+        // Thêm vào panel chính
         panel.add(container);
         panel.add(Box.createVerticalStrut(15));
     }
     
+    // Tạo style cho nút
     private void styleButton(JButton button, Color color) {
+        // Thiết lập font và màu sắc
         button.setFont(new Font("Segoe UI", Font.BOLD, 14));
         button.setForeground(Color.WHITE);
         button.setBackground(color);
@@ -140,6 +151,7 @@ public class SignUp extends JFrame {
         button.setPreferredSize(new Dimension(200, 35));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
+        // Thêm hiệu ứng hover
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -153,14 +165,18 @@ public class SignUp extends JFrame {
         });
     }
     
+    // Xử lý đăng ký tài khoản
     private void register() {
+        // Kiểm tra dữ liệu đầu vào
         if (!validateInput()) return;
         
         try {
+            // Kết nối database và thêm người dùng mới
             connection = DBConnection.getConnection();
             String query = "INSERT INTO tbl_user (username, email, password, gender, address, avatar) VALUES (?, ?, ?, ?, ?, ?)";
             PreparedStatement ps = connection.prepareStatement(query);
             
+            // Thiết lập các tham số
             ps.setString(1, txtUsername.getText().trim());
             ps.setString(2, txtEmail.getText().trim());
             String hashedPassword = BCrypt.hashpw(new String(txtPassword.getPassword()), BCrypt.gensalt());
@@ -170,65 +186,73 @@ public class SignUp extends JFrame {
             String avatar = txtAvatar.getText().trim();
             ps.setString(6, avatar.isEmpty() ? null : avatar);
             
+            // Thực hiện thêm dữ liệu
             int result = ps.executeUpdate();
             if (result > 0) {
                 JOptionPane.showMessageDialog(this,
-                    "Registration successful! Please sign in.",
-                    "Success",
+                    "Đăng ký thành công! Vui lòng đăng nhập.",
+                    "Thành công",
                     JOptionPane.INFORMATION_MESSAGE);
                 dispose();
                 new SignIn().setVisible(true);
             }
         } catch (SQLException ex) {
-            showError("Error registering user: " + ex.getMessage());
+            showError("Lỗi đăng ký: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
     
+    // Kiểm tra dữ liệu đầu vào
     private boolean validateInput() {
+        // Lấy dữ liệu từ các trường nhập
         String username = txtUsername.getText().trim();
         String email = txtEmail.getText().trim();
         String password = new String(txtPassword.getPassword());
         String confirmPassword = new String(txtConfirmPassword.getPassword());
         
+        // Kiểm tra các trường bắt buộc
         if (username.isEmpty()) {
-            showError("Username is required");
+            showError("Vui lòng nhập username");
             return false;
         }
         
         if (email.isEmpty()) {
-            showError("Email is required");
+            showError("Vui lòng nhập email");
             return false;
         }
         
+        // Kiểm tra định dạng email
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            showError("Invalid email format");
+            showError("Email không hợp lệ");
             return false;
         }
         
         if (password.isEmpty()) {
-            showError("Password is required");
+            showError("Vui lòng nhập mật khẩu");
             return false;
         }
         
+        // Kiểm tra mật khẩu xác nhận
         if (!password.equals(confirmPassword)) {
-            showError("Passwords do not match");
+            showError("Mật khẩu xác nhận không khớp");
             return false;
         }
         
+        // Kiểm tra giới tính
         if (!rbtnMale.isSelected() && !rbtnFemale.isSelected()) {
-            showError("Please select a gender");
+            showError("Vui lòng chọn giới tính");
             return false;
         }
         
         return true;
     }
     
+    // Hiển thị thông báo lỗi
     private void showError(String message) {
         JOptionPane.showMessageDialog(
             this,
             message,
-            "Error",
+            "Lỗi",
             JOptionPane.ERROR_MESSAGE
         );
     }

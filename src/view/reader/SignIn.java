@@ -8,16 +8,20 @@ import java.sql.*;
 import utils.DBConnection;
 import java.util.prefs.Preferences;
 import org.mindrot.jbcrypt.BCrypt;
+import view.MainManage;
 
 public class SignIn extends JFrame {
-    private JTextField txtEmail;
-    private JPasswordField txtPassword;
-    private JButton btnLogin, btnRegister;
-    private JCheckBox chkRemember;
-    private Connection connection;
+    // Khai báo các biến thành viên
+    private JTextField txtEmail; // Trường nhập email
+    private JPasswordField txtPassword; // Trường nhập mật khẩu
+    private JButton btnLogin, btnRegister; // Các nút đăng nhập và đăng ký
+    private JCheckBox chkRemember; // Checkbox ghi nhớ đăng nhập
+    private Connection connection; // Kết nối database
     
+    // Khởi tạo giao diện đăng nhập
     public SignIn() {
-        setTitle("Sign In");
+        // Thiết lập cấu hình cửa sổ
+        setTitle("Đăng nhập");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         
@@ -52,7 +56,7 @@ public class SignIn extends JFrame {
         ));
         
         // Logo/title
-        JLabel lblLogo = new JLabel("Sign In");
+        JLabel lblLogo = new JLabel("Đăng nhập");
         lblLogo.setFont(new Font("Segoe UI", Font.BOLD, 24));
         lblLogo.setForeground(new Color(51, 51, 51));
         lblLogo.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -78,7 +82,7 @@ public class SignIn extends JFrame {
         // Password field
         JPanel passwordPanel = new JPanel(new BorderLayout(10, 0));
         passwordPanel.setOpaque(false);
-        JLabel lblPassword = new JLabel("Password");
+        JLabel lblPassword = new JLabel("Mật khẩu");
         lblPassword.setFont(new Font("Segoe UI", Font.BOLD, 12));
         txtPassword = new JPasswordField();
         txtPassword.setPreferredSize(new Dimension(200, 30));
@@ -94,7 +98,7 @@ public class SignIn extends JFrame {
         // Remember me checkbox
         JPanel rememberPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         rememberPanel.setOpaque(false);
-        chkRemember = new JCheckBox("Remember me");
+        chkRemember = new JCheckBox("Ghi nhớ tài khoản");
         chkRemember.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         chkRemember.setOpaque(false);
         rememberPanel.add(chkRemember);
@@ -102,12 +106,12 @@ public class SignIn extends JFrame {
         loginPanel.add(Box.createVerticalStrut(20));
         
         // Login button
-        btnLogin = new JButton("Sign In");
+        btnLogin = new JButton("Đăng nhập");
         styleButton(btnLogin, new Color(66, 139, 202));
         btnLogin.addActionListener(e -> signIn());
         
         // Register button
-        btnRegister = new JButton("Create Account");
+        btnRegister = new JButton("Tạo Tài khoản");
         styleButton(btnRegister, new Color(46, 204, 113));
         btnRegister.addActionListener(e -> {
             dispose();
@@ -127,7 +131,7 @@ public class SignIn extends JFrame {
         setSize(400, 500);
         setLocationRelativeTo(null);
         
-        // Add key listener for Enter key
+        // Thêm key listener cho phím Enter
         KeyAdapter enterKeyListener = new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -140,7 +144,9 @@ public class SignIn extends JFrame {
         txtPassword.addKeyListener(enterKeyListener);
     }
     
+    // Tạo style cho nút
     private void styleButton(JButton button, Color color) {
+        // Thiết lập font và màu sắc
         button.setFont(new Font("Segoe UI", Font.BOLD, 14));
         button.setForeground(Color.WHITE);
         button.setBackground(color);
@@ -149,6 +155,7 @@ public class SignIn extends JFrame {
         button.setPreferredSize(new Dimension(200, 35));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
+        // Thêm hiệu ứng hover
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -162,60 +169,64 @@ public class SignIn extends JFrame {
         });
     }
     
+    // Xử lý đăng nhập
     private void signIn() {
         String email = txtEmail.getText().trim();
         String password = new String(txtPassword.getPassword());
         
+        // Kiểm tra dữ liệu nhập vào
         if (email.isEmpty() || password.isEmpty()) {
-            showError("Please enter both email and password");
+            showError("Vui lòng nhập email và mật khẩu");
             return;
         }
         
+        // Kiểm tra định dạng email
         if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            showError("Invalid email format");
+            showError("Định dạng email không hợp lệ");
             return;
         }
         
         try {
+            // Kết nối database và kiểm tra thông tin đăng nhập
             connection = DBConnection.getConnection();
-            // Lấy thông tin user và hash password từ database
             String query = "SELECT * FROM tbl_user WHERE email = ?";
             PreparedStatement ps = connection.prepareStatement(query);
             ps.setString(1, email);
             ResultSet rs = ps.executeQuery();
             
             if (rs.next()) {
-                String hashedPassword = rs.getString("password");
-                // Kiểm tra password với BCrypt
-                if (BCrypt.checkpw(password, hashedPassword)) {
+                String storedHashedPassword = rs.getString("password");
+                if (BCrypt.checkpw(password, storedHashedPassword)) {
                     int userId = rs.getInt("id");
                     
                     // Lưu thông tin đăng nhập nếu chọn Remember me
                     if (chkRemember.isSelected()) {
                         Preferences prefs = Preferences.userRoot();
                         prefs.put("reader_email", email);
-                        // Lưu hash password thay vì plain text
-                        prefs.put("reader_password", hashedPassword);
+                        prefs.put("reader_password", storedHashedPassword);
                     } else {
+                        // Xóa thông tin đăng nhập nếu không chọn Remember me
                         Preferences prefs = Preferences.userRoot();
                         prefs.remove("reader_email");
                         prefs.remove("reader_password");
                     }
                     
+                    // Chuyển đến màn hình chính
                     dispose();
-                    showNewsFeed(userId);
+                    new MainManage(userId).showNewsFeed(userId);
                 } else {
-                    showError("Invalid email or password");
+                    showError("Email hoặc mật khẩu không đúng");
                 }
             } else {
-                showError("Invalid email or password");
+                showError("Email hoặc mật khẩu không đúng");
             }
         } catch (SQLException ex) {
-            showError("Database error: " + ex.getMessage());
+            showError("Lỗi cơ sở dữ liệu: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
     
+    // Hiển thị thông báo lỗi
     private void showError(String message) {
         JOptionPane.showMessageDialog(
             this,
@@ -225,6 +236,7 @@ public class SignIn extends JFrame {
         );
     }
     
+    // Hiển thị màn hình tin tức
     private void showNewsFeed(int userId) {
         JFrame newsFeedFrame = new JFrame("News Feed");
         newsFeedFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

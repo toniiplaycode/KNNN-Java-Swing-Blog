@@ -13,20 +13,22 @@ import utils.DBConnection;
 
 public class ListUsers extends JPanel {
 
+	// Khai báo các biến thành viên
 	private static final long serialVersionUID = 1L;
-	private JTable table;
-	private JTextField txtUsername, txtEmail, txtAddress, txtSearch, txtAvatar;
-	private JPasswordField txtPassword;
-	private JRadioButton rbtnMale, rbtnFemale;
-	private ButtonGroup genderGroup;
-	private JButton btnAdd, btnUpdate, btnDelete, btnClear;
-	private DefaultTableModel tableModel;
-	private Connection connection;
+	private JTable table; // Bảng hiển thị danh sách người dùng
+	private JTextField txtUsername, txtEmail, txtAddress, txtSearch, txtAvatar; // Các trường nhập liệu
+	private JPasswordField txtPassword; // Trường nhập mật khẩu
+	private JRadioButton rbtnMale, rbtnFemale; // Radio button chọn giới tính
+	private ButtonGroup genderGroup; // Nhóm radio button giới tính
+	private JButton btnAdd, btnUpdate, btnDelete, btnClear; // Các nút chức năng
+	private DefaultTableModel tableModel; // Model cho bảng
+	private Connection connection; // Kết nối database
 
+	// Constructor của lớp ListUsers
 	public ListUsers() {
 		setLayout(new BorderLayout());
 
-		// Initialize table model
+		// Khởi tạo model cho bảng
 		tableModel = new DefaultTableModel(
 			new Object[]{"ID", "Username", "Email", "Gender", "Address", "Avatar", "Actions"}, 0) {
 			@Override
@@ -36,7 +38,7 @@ public class ListUsers extends JPanel {
 		};
 		table = new JTable(tableModel);
 
-		// Create search panel
+		// Tạo panel tìm kiếm
 		JPanel searchPanel = new JPanel(new BorderLayout());
 		txtSearch = new JTextField();
 		txtSearch.setFont(new Font("Segoe UI", Font.PLAIN, 14));
@@ -45,7 +47,7 @@ public class ListUsers extends JPanel {
 		searchPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 		add(searchPanel, BorderLayout.NORTH);
 
-		// Style the table
+		// Tạo style cho bảng
 		table.setRowHeight(30);
 		table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		table.setFillsViewportHeight(true);
@@ -54,17 +56,17 @@ public class ListUsers extends JPanel {
 		table.setSelectionBackground(new Color(70, 130, 180));
 		table.setSelectionForeground(Color.WHITE);
 
-		// Create scroll pane for table
+		// Tạo thanh cuộn cho bảng
 		JScrollPane scrollPane = new JScrollPane(table);
 		add(scrollPane, BorderLayout.CENTER);
 
-		// Setup input panel
+		// Thiết lập panel nhập liệu
 		setupInputPanel();
 
-		// Configure Edit button column
+		// Cấu hình cột nút Edit
 		configureEditButtonColumn();
 
-		// Add search functionality
+		// Thêm chức năng tìm kiếm
 		txtSearch.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
 			public void insertUpdate(DocumentEvent e) {
@@ -82,7 +84,7 @@ public class ListUsers extends JPanel {
 			}
 		});
 
-		// Add table row selection listener
+		// Thêm sự kiện lắng nghe khi chọn dòng trong bảng
 		table.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -101,16 +103,17 @@ public class ListUsers extends JPanel {
 			}
 		});
 
-		// Add button listeners
+		// Thêm sự kiện cho các nút
 		btnAdd.addActionListener(e -> addUser());
 		btnUpdate.addActionListener(e -> updateUser());
 		btnDelete.addActionListener(e -> deleteUser());
 		btnClear.addActionListener(e -> clearFields());
 
-		// Load initial data
+		// Tải dữ liệu ban đầu
 		loadUsers("");
 	}
 
+	// Thiết lập giao diện panel nhập liệu
 	private void setupInputPanel() {
 		JPanel inputPanel = new JPanel(new BorderLayout(10, 10));
 		inputPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -192,6 +195,7 @@ public class ListUsers extends JPanel {
 		add(inputPanel, BorderLayout.SOUTH);
 	}
 
+	// Tạo button với style tùy chỉnh
 	private JButton createStyledButton(String text, Color bgColor) {
 		JButton button = new JButton(text);
 		button.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -213,17 +217,18 @@ public class ListUsers extends JPanel {
 		return button;
 	}
 
+	// Cấu hình cột chứa nút Edit và Detail trong bảng
 	private void configureEditButtonColumn() {
-		// Set preferred width for all columns
-		table.getColumnModel().getColumn(0).setPreferredWidth(50);  // ID
-		table.getColumnModel().getColumn(1).setPreferredWidth(150); // Username
-		table.getColumnModel().getColumn(2).setPreferredWidth(200); // Email
-		table.getColumnModel().getColumn(3).setPreferredWidth(80);  // Gender
-		table.getColumnModel().getColumn(4).setPreferredWidth(150); // Address
-		table.getColumnModel().getColumn(5).setPreferredWidth(200); // Avatar
-		table.getColumnModel().getColumn(6).setPreferredWidth(140); // Actions
+		// Thiết lập độ rộng ưu tiên cho tất cả các cột
+		table.getColumnModel().getColumn(0).setPreferredWidth(50);  // Cột ID
+		table.getColumnModel().getColumn(1).setPreferredWidth(150); // Cột Username
+		table.getColumnModel().getColumn(2).setPreferredWidth(200); // Cột Email
+		table.getColumnModel().getColumn(3).setPreferredWidth(80);  // Cột Gender
+		table.getColumnModel().getColumn(4).setPreferredWidth(150); // Cột Address
+		table.getColumnModel().getColumn(5).setPreferredWidth(200); // Cột Avatar
+		table.getColumnModel().getColumn(6).setPreferredWidth(140); // Cột Actions
 
-		// Configure the Actions column
+		// Cấu hình cột Actions
 		table.getColumnModel().getColumn(6).setCellRenderer(new DefaultTableCellRenderer() {
 			@Override
 			public Component getTableCellRendererComponent(JTable table, Object value,
@@ -316,10 +321,11 @@ public class ListUsers extends JPanel {
 			}
 		});
 
-		// Enable auto resize mode
+		// Cho phép tự động điều chỉnh kích thước cột
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
 	}
 
+	// Tải danh sách người dùng từ database
 	private void loadUsers(String searchQuery) {
 		try {
 			connection = DBConnection.getConnection();
@@ -354,10 +360,12 @@ public class ListUsers extends JPanel {
 		}
 	}
 
+	// Tìm kiếm người dùng theo từ khóa
 	private void searchUsers(String query) {
 		loadUsers(query);
 	}
 
+	// Tải thông tin người dùng để chỉnh sửa
 	private void loadUserForEdit(int id) {
 		try {
 			connection = DBConnection.getConnection();
@@ -396,6 +404,7 @@ public class ListUsers extends JPanel {
 		}
 	}
 
+	// Hiển thị dialog chi tiết người dùng
 	private void showUserDetailDialog(int userId) {
 		try {
 			connection = DBConnection.getConnection();
@@ -465,6 +474,7 @@ public class ListUsers extends JPanel {
 		}
 	}
 
+	// Thêm một dòng thông tin vào dialog chi tiết
 	private void addDetailRow(JPanel panel, String label, String value) {
 		JPanel rowPanel = new JPanel(new BorderLayout(10, 5));
 		rowPanel.setMaximumSize(new Dimension(350, 30));
@@ -482,6 +492,7 @@ public class ListUsers extends JPanel {
 		panel.add(Box.createVerticalStrut(10));
 	}
 
+	// Thêm người dùng mới
 	private void addUser() {
 		// Validation cho thêm mới (isUpdate = false)
 		if (!validateInput(false)) {
@@ -518,6 +529,7 @@ public class ListUsers extends JPanel {
 		}
 	}
 
+	// Cập nhật thông tin người dùng
 	private void updateUser() {
 		int selectedRow = table.getSelectedRow();
 		if (selectedRow == -1) {
@@ -585,6 +597,7 @@ public class ListUsers extends JPanel {
 		}
 	}
 
+	// Xóa người dùng
 	private void deleteUser() {
 		int selectedRow = table.getSelectedRow();
 		if (selectedRow == -1) {
@@ -628,6 +641,7 @@ public class ListUsers extends JPanel {
 		}
 	}
 
+	// Kiểm tra tính hợp lệ của dữ liệu nhập vào
 	private boolean validateInput(boolean isUpdate) {
 		String username = txtUsername.getText().trim();
 		String email = txtEmail.getText().trim();
@@ -681,6 +695,7 @@ public class ListUsers extends JPanel {
 		return true;
 	}
 
+	// Xóa trắng các trường nhập liệu
 	private void clearFields() {
 		txtUsername.setText("");
 		txtEmail.setText("");

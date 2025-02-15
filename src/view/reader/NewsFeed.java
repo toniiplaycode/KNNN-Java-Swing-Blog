@@ -230,46 +230,73 @@ public class NewsFeed extends JFrame {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         buttonPanel.setOpaque(false);
         
-        // Account Settings button
-        JButton btnAccount = createHeaderButton("Tài khoản", "/icons/user.png");
-        btnAccount.addActionListener(e -> {
-            AccountSettings dialog = new AccountSettings(
-                (JFrame) SwingUtilities.getWindowAncestor(this), 
-                userId
-            );
-            dialog.setVisible(true);
-        });
-        
-        // Add Post button
-        JButton btnAddPost = createHeaderButton("Bài viết mới", "/icons/edit.png");
-        btnAddPost.addActionListener(e -> {
-            HandlePostDialog dialog = new HandlePostDialog(
-                (JFrame) SwingUtilities.getWindowAncestor(this),
-                userId,
-                () -> loadPosts()
-            );
-            dialog.setVisible(true);
-        });
-        
-        // Switch to Manager button
-        JButton btnSwitchToManager = createHeaderButton("Chuyển sang quản lý", "/icons/switch.png");
-        btnSwitchToManager.addActionListener(e -> {
-            Window window = SwingUtilities.getWindowAncestor(this);
-            if (window instanceof JFrame) {
-                window.dispose();
-            }
-            MainManage manager = new MainManage(userId);
-            manager.initManagerUI();
-        });
-        
-        // Logout button
-        JButton btnLogout = createHeaderButton("Đăng xuất", "/icons/logout.png");
-        btnLogout.addActionListener(e -> logout());
-        
-        buttonPanel.add(btnAccount);
-        buttonPanel.add(btnAddPost);
-        buttonPanel.add(btnSwitchToManager);
-        buttonPanel.add(btnLogout);
+        // Điều chỉnh hiển thị các nút dựa trên trạng thái đăng nhập
+        if (userId == 0) {
+            // Nếu là khách vãng lai
+            JButton btnLogin = new JButton("Đăng nhập");
+            btnLogin.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            btnLogin.setForeground(Color.WHITE);
+            btnLogin.setBackground(new Color(52, 152, 219));
+            btnLogin.setBorderPainted(false);
+            btnLogin.setFocusPainted(false);
+            btnLogin.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btnLogin.addActionListener(e -> {
+                Window window = SwingUtilities.getWindowAncestor(this);
+                if (window instanceof JFrame) {
+                    window.dispose();
+                    new SignIn().setVisible(true);
+                }
+            });
+            
+            JButton btnRegister = new JButton("Đăng ký");
+            btnRegister.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            btnRegister.setForeground(Color.WHITE);
+            btnRegister.setBackground(new Color(46, 204, 113));
+            btnRegister.setBorderPainted(false);
+            btnRegister.setFocusPainted(false);
+            btnRegister.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            btnRegister.addActionListener(e -> {
+                Window window = SwingUtilities.getWindowAncestor(this);
+                if (window instanceof JFrame) {
+                    window.dispose();
+                    new SignUp().setVisible(true);
+                }
+            });
+
+            // Thêm các nút vào header panel
+            headerPanel.add(btnLogin);
+            headerPanel.add(Box.createHorizontalStrut(10));
+            headerPanel.add(btnRegister);
+        } else {
+            // Nếu đã đăng nhập, hiển thị các nút hiện tại
+            // Account Settings button
+            JButton btnAccount = createHeaderButton("Tài khoản", "/icons/user.png");
+            btnAccount.addActionListener(e -> {
+                AccountSettings dialog = new AccountSettings(
+                    (JFrame) SwingUtilities.getWindowAncestor(this), 
+                    userId
+                );
+                dialog.setVisible(true);
+            });
+            
+            // Add Post button
+            JButton btnAddPost = createHeaderButton("Bài viết mới", "/icons/edit.png");
+            btnAddPost.addActionListener(e -> {
+                HandlePostDialog dialog = new HandlePostDialog(
+                    (JFrame) SwingUtilities.getWindowAncestor(this),
+                    userId,
+                    () -> loadPosts()
+                );
+                dialog.setVisible(true);
+            });
+            // Logout button
+            JButton btnLogout = createHeaderButton("Đăng xuất", "/icons/logout.png");
+            btnLogout.addActionListener(e -> logout());
+            
+            buttonPanel.add(btnAccount);
+            buttonPanel.add(btnAddPost);
+            buttonPanel.add(btnLogout);
+        }
         
         headerPanel.add(userPanel, BorderLayout.WEST);
         headerPanel.add(searchPanel, BorderLayout.CENTER);
@@ -639,44 +666,7 @@ public class NewsFeed extends JFrame {
         lblLikeCount.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
         
         btnLike.addActionListener(e -> {
-            try {
-                connection = DBConnection.getConnection();
-                boolean isLiked = btnLike.getText().equals("Bỏ thích");
-                
-                if (isLiked) {
-                    // Unlike
-                    String query = "DELETE FROM tbl_like WHERE post_id = ? AND user_id = ?";
-                    PreparedStatement ps = connection.prepareStatement(query);
-                    ps.setInt(1, postId);
-                    ps.setInt(2, userId);
-                    ps.executeUpdate();
-                    
-                    // Update UI
-                    btnLike.setText("Thích");
-                    btnLike.setForeground(new Color(52, 152, 219));
-                    lblLikeCount.setText(String.valueOf(Integer.parseInt(lblLikeCount.getText()) - 1));
-                    
-                } else {
-                    // Like
-                    String query = "INSERT INTO tbl_like (post_id, user_id) VALUES (?, ?)";
-                    PreparedStatement ps = connection.prepareStatement(query);
-                    ps.setInt(1, postId);
-                    ps.setInt(2, userId);
-                    ps.executeUpdate();
-                    
-                    // Update UI
-                    btnLike.setText("Bỏ thích");
-                    btnLike.setForeground(new Color(231, 76, 60));
-                    lblLikeCount.setText(String.valueOf(Integer.parseInt(lblLikeCount.getText()) + 1));
-                }
-                
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-                JOptionPane.showMessageDialog(this,
-                    "Error toggling like: " + ex.getMessage(),
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            }
+            handleLikeAction(postId, btnLike, lblLikeCount);
         });
         
         likePanel.add(btnLike);
@@ -694,7 +684,7 @@ public class NewsFeed extends JFrame {
         btnShowComments.setForeground(new Color(52, 152, 219));
         btnShowComments.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        btnShowComments.addActionListener(e -> showCommentsDialog(postId, title));
+        btnShowComments.addActionListener(e -> handleCommentAction(postId, title));
         
         // Thêm nút Xem
         JButton btnView = new JButton("Xem blog cá nhân");
@@ -771,15 +761,7 @@ public class NewsFeed extends JFrame {
     }
     
     private void createNewPost() {
-        HandlePostDialog dialog = new HandlePostDialog(
-            (JFrame) SwingUtilities.getWindowAncestor(this),
-            userId,
-            () -> {
-                loadPosts();
-                scrollToTop();
-            }
-        );
-        dialog.setVisible(true);
+        showCreatePostDialog();
     }
     
     private void logout() {
@@ -1668,6 +1650,109 @@ public class NewsFeed extends JFrame {
                 "Lỗi khi tải bài viết: " + e.getMessage(),
                 "Lỗi",
                 JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void handleLikeAction(int postId, JButton btnLike, JLabel lblLikeCount) {
+        if (userId == 0) {
+            showLoginDialog("Vui lòng đăng nhập để thích bài viết");
+            return;
+        }
+        
+        try {
+            connection = DBConnection.getConnection();
+            boolean isLiked = btnLike.getText().equals("Bỏ thích");
+            
+            if (isLiked) {
+                // Unlike
+                String query = "DELETE FROM tbl_like WHERE post_id = ? AND user_id = ?";
+                PreparedStatement ps = connection.prepareStatement(query);
+                ps.setInt(1, postId);
+                ps.setInt(2, userId);
+                ps.executeUpdate();
+                
+                // Update UI
+                btnLike.setText("Thích");
+                btnLike.setForeground(new Color(52, 152, 219));
+                lblLikeCount.setText(String.valueOf(Integer.parseInt(lblLikeCount.getText()) - 1));
+                
+            } else {
+                // Like
+                String query = "INSERT INTO tbl_like (post_id, user_id) VALUES (?, ?)";
+                PreparedStatement ps = connection.prepareStatement(query);
+                ps.setInt(1, postId);
+                ps.setInt(2, userId);
+                ps.executeUpdate();
+                
+                // Update UI
+                btnLike.setText("Bỏ thích");
+                btnLike.setForeground(new Color(231, 76, 60));
+                lblLikeCount.setText(String.valueOf(Integer.parseInt(lblLikeCount.getText()) + 1));
+            }
+            
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                "Error toggling like: " + ex.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void handleCommentAction(int postId, String title) {
+        if (userId == 0) {
+            showLoginDialog("Vui lòng đăng nhập để bình luận");
+            return;
+        }
+        
+        CommentsDialog dialog = new CommentsDialog(
+            (JFrame) SwingUtilities.getWindowAncestor(this),
+            title,
+            postId,
+            userId,
+            this::loadPosts // Callback để refresh posts khi có comment mới
+        );
+        dialog.setVisible(true);
+    }
+
+    private void showCreatePostDialog() {
+        if (userId == 0) {
+            showLoginDialog("Vui lòng đăng nhập để đăng bài");
+            return;
+        }
+        
+        HandlePostDialog dialog = new HandlePostDialog(
+            (JFrame) SwingUtilities.getWindowAncestor(this),
+            userId,
+            () -> {
+                loadPosts();
+                scrollToTop();
+            }
+        );
+        dialog.setVisible(true);
+    }
+
+    private void showLoginDialog(String message) {
+        int choice = JOptionPane.showConfirmDialog(
+            this,
+            message + "\nBạn có muốn đăng nhập ngay bây giờ không?",
+            "Yêu cầu đăng nhập", 
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        
+        if (choice == JOptionPane.YES_OPTION) {
+            // Tìm JFrame cha và đóng nó
+            Window window = SwingUtilities.getWindowAncestor(this);
+            if (window instanceof JFrame) {
+                window.dispose();
+            }
+            
+            // Mở SignIn frame
+            EventQueue.invokeLater(() -> {
+                SignIn signIn = new SignIn();
+                signIn.setVisible(true);
+            });
         }
     }
 } 

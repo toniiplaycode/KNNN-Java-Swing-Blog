@@ -22,22 +22,24 @@ import javax.swing.event.DocumentListener;
 import javax.swing.ImageIcon;
 
 public class HandlePostDialog extends JDialog {
-    private Connection connection;
-    private int userId;
-    private Runnable onPostAdded;
-    private int postId;
-    private boolean isEditMode;
-    private JTextField txtTitle;
-    private JTextPane txtContent;
-    private JTextArea txtImageUrl;
-    private JLabel lblTitle;
-    private JLabel lblContent;
-    private JLabel lblImageUrl;
-    private JPanel categoryPanel;
-    private List<JCheckBox> categoryCheckboxes;
-    private JLabel lblImagePreview;
-    private Timer previewTimer;
+    // Khai báo các biến thành viên
+    private Connection connection; // Kết nối database
+    private int userId; // ID người dùng
+    private Runnable onPostAdded; // Callback khi thêm/sửa bài viết
+    private int postId; // ID bài viết (khi ở chế độ sửa)
+    private boolean isEditMode; // Chế độ sửa/thêm mới
+    private JTextField txtTitle; // Trường nhập tiêu đề
+    private JTextPane txtContent; // Trường nhập nội dung
+    private JTextArea txtImageUrl; // Trường nhập URL ảnh
+    private JLabel lblTitle; // Label tiêu đề
+    private JLabel lblContent; // Label nội dung
+    private JLabel lblImageUrl; // Label URL ảnh
+    private JPanel categoryPanel; // Panel chứa danh sách thể loại
+    private List<JCheckBox> categoryCheckboxes; // Danh sách checkbox thể loại
+    private JLabel lblImagePreview; // Label xem trước ảnh
+    private Timer previewTimer; // Timer để delay xem trước ảnh
     
+    // Khởi tạo dialog tạo bài viết mới
     public HandlePostDialog(JFrame parent, int userId, Runnable onPostAdded) {
         super(parent, "Tạo bài viết mới", true);
         this.userId = userId;
@@ -46,6 +48,7 @@ public class HandlePostDialog extends JDialog {
         initializeUI();
     }
     
+    // Khởi tạo dialog chỉnh sửa bài viết
     public HandlePostDialog(JFrame parent, int userId, int postId, String title, 
             String content, String imageUrl, Runnable onPostAdded) {
         super(parent, "Chỉnh sửa bài viết", true);
@@ -61,6 +64,7 @@ public class HandlePostDialog extends JDialog {
         txtImageUrl.setText(imageUrl != null ? imageUrl : "");
     }
     
+    // Khởi tạo giao diện người dùng
     private void initializeUI() {
         setSize(1000, 800);
         setLocationRelativeTo(null);
@@ -220,6 +224,7 @@ public class HandlePostDialog extends JDialog {
         setupKeyboardShortcuts(txtContent);
     }
     
+    // Tạo nhóm các trường nhập liệu
     private JPanel createFormGroup(JLabel label, JComponent field) {
         JPanel panel = new JPanel(new BorderLayout(0, 10));
         panel.setOpaque(false);
@@ -228,6 +233,7 @@ public class HandlePostDialog extends JDialog {
         return panel;
     }
     
+    // Tạo và tùy chỉnh nút
     private JButton createButton(String text, Color bgColor, Color fgColor) {
         JButton button = new JButton(text);
         button.setFont(new Font("Segoe UI", Font.BOLD, 14));
@@ -250,6 +256,7 @@ public class HandlePostDialog extends JDialog {
         return button;
     }
     
+    // Tạo thanh công cụ định dạng văn bản
     private JToolBar createFormatToolbar(JTextPane txtContent) {
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
@@ -273,6 +280,7 @@ public class HandlePostDialog extends JDialog {
         return toolbar;
     }
     
+    // Tùy chỉnh style cho nút
     private void styleButton(JButton button, Color color) {
         button.setFont(new Font("Segoe UI", Font.BOLD, 12));
         button.setForeground(Color.WHITE);
@@ -292,6 +300,7 @@ public class HandlePostDialog extends JDialog {
         });
     }
     
+    // Thiết lập phím tắt cho các chức năng định dạng
     private void setupKeyboardShortcuts(JTextPane textPane) {
         InputMap inputMap = textPane.getInputMap();
         ActionMap actionMap = textPane.getActionMap();
@@ -321,6 +330,7 @@ public class HandlePostDialog extends JDialog {
         });
     }
     
+    // Thêm nút định dạng vào toolbar
     private void addFormatButton(JToolBar toolbar, String text, String tooltip, String format, JTextPane textPane) {
         JButton button = new JButton(text);
         button.setToolTipText(tooltip);
@@ -335,6 +345,7 @@ public class HandlePostDialog extends JDialog {
         toolbar.add(button);
     }
     
+    // Thêm nút tạo danh sách vào toolbar
     private void addListButton(JToolBar toolbar, String text, String tooltip, boolean numbered, JTextPane textPane) {
         JButton button = new JButton(text);
         button.setToolTipText(tooltip);
@@ -349,6 +360,7 @@ public class HandlePostDialog extends JDialog {
         toolbar.add(button);
     }
     
+    // Áp dụng định dạng cho văn bản được chọn
     private void applyFormat(JTextPane textPane, String format) {
         StyledEditorKit kit = (StyledEditorKit) textPane.getEditorKit();
         MutableAttributeSet attr = new SimpleAttributeSet();
@@ -369,6 +381,7 @@ public class HandlePostDialog extends JDialog {
         textPane.setCharacterAttributes(attr, false);
     }
     
+    // Áp dụng cỡ chữ cho văn bản được chọn
     private void applyFontSize(JTextPane textPane, int size) {
         StyledEditorKit kit = (StyledEditorKit) textPane.getEditorKit();
         MutableAttributeSet attr = new SimpleAttributeSet();
@@ -377,6 +390,7 @@ public class HandlePostDialog extends JDialog {
         textPane.setCharacterAttributes(attr, false);
     }
     
+    // Tạo danh sách không đánh số
     private void createList(JTextPane textPane) {
         String selectedText = textPane.getSelectedText();
         if (selectedText != null) {
@@ -399,6 +413,7 @@ public class HandlePostDialog extends JDialog {
         }
     }
     
+    // Tạo danh sách đánh số
     private void createNumberedList(JTextPane textPane) {
         String selectedText = textPane.getSelectedText();
         if (selectedText != null) {
@@ -421,6 +436,7 @@ public class HandlePostDialog extends JDialog {
         }
     }
     
+    // Tải danh sách thể loại từ database
     private void loadCategories() {
         try {
             connection = DBConnection.getConnection();
@@ -441,6 +457,7 @@ public class HandlePostDialog extends JDialog {
         }
     }
     
+    // Tải các thể loại đã chọn (cho chế độ sửa)
     private void loadSelectedCategories() {
         try {
             connection = DBConnection.getConnection();
