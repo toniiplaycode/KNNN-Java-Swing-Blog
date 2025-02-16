@@ -67,7 +67,7 @@ public class Login extends JFrame {
         emailPanel.setOpaque(false);
         JLabel lblEmail = new JLabel("Email");
         lblEmail.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        txtEmail = new JTextField("tyadmin@example.com");
+        txtEmail = new JTextField();
         txtEmail.setPreferredSize(new Dimension(200, 30));
         txtEmail.setBorder(BorderFactory.createCompoundBorder(
             new LineBorder(new Color(200, 200, 200)),

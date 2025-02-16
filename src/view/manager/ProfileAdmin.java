@@ -8,6 +8,7 @@ import java.sql.*;
 import java.net.URL;
 import utils.DBConnection;
 import java.util.prefs.Preferences;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class ProfileAdmin extends JPanel {
     private static final long serialVersionUID = 1L;
@@ -243,9 +244,10 @@ public class ProfileAdmin extends JPanel {
     }
     
     private void changePassword() {
+        // Kiểm tra dữ liệu đầu vào
+        if (!validatePasswordInput()) return;
+        
         try {
-            if (!validatePasswordInput()) return;
-            
             connection = DBConnection.getConnection();
             
             // Xác thực mật khẩu hiện tại
@@ -256,19 +258,25 @@ public class ProfileAdmin extends JPanel {
             
             if (rs.next()) {
                 String currentPassword = new String(txtCurrentPassword.getPassword());
-                if (!rs.getString("password").equals(currentPassword)) {
+                String storedHashedPassword = rs.getString("password");
+                
+                // Kiểm tra mật khẩu hiện tại bằng BCrypt
+                if (!BCrypt.checkpw(currentPassword, storedHashedPassword)) {
                     JOptionPane.showMessageDialog(this,
-                        "Mật khẩu hiện tại không đúng",
+                        "Mật khẩu hiện tại không đúng!",
                         "Lỗi",
                         JOptionPane.ERROR_MESSAGE);
                     return;
                 }
             }
             
-            // Cập nhật mật khẩu mới
+            // Cập nhật mật khẩu mới đã được mã hóa
+            String newPassword = new String(txtNewPassword.getPassword());
+            String hashedPassword = BCrypt.hashpw(newPassword, BCrypt.gensalt());
+            
             String updateQuery = "UPDATE tbl_admin SET password = ? WHERE id = ?";
             PreparedStatement updatePs = connection.prepareStatement(updateQuery);
-            updatePs.setString(1, new String(txtNewPassword.getPassword()));
+            updatePs.setString(1, hashedPassword);
             updatePs.setInt(2, userId);
             
             int result = updatePs.executeUpdate();
