@@ -5,8 +5,10 @@ import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
-import utils.DBConnection;
+
 import org.mindrot.jbcrypt.BCrypt;
+
+import connection.DBConnection;
 
 public class SignUp extends JFrame {
     // Khai báo các biến thành viên

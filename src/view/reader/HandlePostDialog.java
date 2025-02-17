@@ -2,10 +2,12 @@ package view.reader;
 import javax.swing.*;
 import javax.swing.text.*;
 import javax.swing.text.html.*;
+
+import connection.DBConnection;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
-import utils.DBConnection;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

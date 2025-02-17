@@ -6,9 +6,10 @@ import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
 import java.net.URL;
-import utils.DBConnection;
 import java.util.prefs.Preferences;
 import org.mindrot.jbcrypt.BCrypt;
+
+import connection.DBConnection;
 
 public class ProfileAdmin extends JPanel {
     private static final long serialVersionUID = 1L;

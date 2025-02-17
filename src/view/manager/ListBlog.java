@@ -2,13 +2,15 @@ package view.manager;
 import com.formdev.flatlaf.FlatLightLaf; // Import FlatLaf
 import com.toedter.calendar.JDateChooser;
 
+import connection.DBConnection;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.net.URL;
 import java.sql.*;
-import utils.DBConnection; // Assuming this class handles DB connection
+
 import javax.swing.event.DocumentListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.border.EmptyBorder;
@@ -414,7 +416,6 @@ public class ListBlog extends JPanel {
 		txtTitle.setText("");
 		txtContent.setText("");
 		txtImgLink.setText("");
-		txtDate.setText("");
 	}
 
 	// Phương thức tải chi tiết bài viết khi click vào một dòng trong bảng

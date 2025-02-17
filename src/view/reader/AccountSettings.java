@@ -4,8 +4,10 @@ import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 import java.sql.*;
-import utils.DBConnection;
+
 import org.mindrot.jbcrypt.BCrypt;
+
+import connection.DBConnection;
 
 public class AccountSettings extends JDialog {
     // Khai báo các biến thành viên

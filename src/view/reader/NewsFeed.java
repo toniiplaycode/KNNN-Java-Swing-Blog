@@ -9,8 +9,11 @@ import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
 import java.text.SimpleDateFormat;
-import utils.DBConnection;
+
 import javax.swing.text.html.*;
+
+import connection.DBConnection;
+
 import java.net.URL;
 import java.net.MalformedURLException;
 import javax.swing.event.*;

@@ -1,6 +1,9 @@
 package view.reader;
 import javax.swing.*;
 import javax.swing.border.*;
+
+import connection.DBConnection;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
@@ -9,7 +12,7 @@ import java.awt.RenderingHints;
 import java.awt.FontMetrics;
 import java.sql.*;
 import java.text.SimpleDateFormat;
-import utils.DBConnection;
+
 import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.io.InputStream;

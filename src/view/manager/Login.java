@@ -5,9 +5,10 @@ import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
-import utils.DBConnection;
 import java.util.prefs.Preferences;
 import org.mindrot.jbcrypt.BCrypt;
+
+import connection.DBConnection;
 import view.MainManage;
 
 public class Login extends JFrame {

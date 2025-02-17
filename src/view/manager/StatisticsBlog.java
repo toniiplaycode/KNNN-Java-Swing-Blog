@@ -4,12 +4,13 @@ import javax.swing.border.*;
 import javax.swing.table.*;
 import java.awt.*;
 import java.sql.*;
-import utils.DBConnection;
 
 import org.jfree.chart.*;
 import org.jfree.chart.plot.*;
 import org.jfree.data.category.*;
 import org.jfree.data.general.*;
+
+import connection.DBConnection;
 
 public class StatisticsBlog extends JPanel {
     private static final long serialVersionUID = 1L;

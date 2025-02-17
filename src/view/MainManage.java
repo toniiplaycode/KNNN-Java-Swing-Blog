@@ -3,6 +3,8 @@ package view;
 import javax.swing.*;
 import java.awt.*;
 import com.formdev.flatlaf.FlatLightLaf;
+
+import connection.DBConnection;
 import view.reader.NewsFeed;
 import view.reader.SignIn;
 import view.manager.ListBlog;
@@ -15,7 +17,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.prefs.Preferences;
-import utils.DBConnection;
+
 import org.mindrot.jbcrypt.BCrypt;
 import view.manager.Login;
 
@@ -301,15 +303,15 @@ public class MainManage extends JFrame {
         Image categoryImg = categoryIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
         tabbedPane.addTab("Quản lý thể loại", new ImageIcon(categoryImg), new ListCategory());
         
-        // Tab Quản lý người dùng
-        ImageIcon userIcon = new ImageIcon(getClass().getResource("/icons/users.png"));
-        Image userImg = userIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
-        tabbedPane.addTab("Quản lý người dùng", new ImageIcon(userImg), new ListUsers());
-        
         // Tab Thống kê
         ImageIcon statsIcon = new ImageIcon(getClass().getResource("/icons/statistics.png"));
         Image statsImg = statsIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
         tabbedPane.addTab("Thống kê", new ImageIcon(statsImg), new StatisticsBlog());
+        
+        // Tab Quản lý người dùng
+        ImageIcon userIcon = new ImageIcon(getClass().getResource("/icons/users.png"));
+        Image userImg = userIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+        tabbedPane.addTab("Quản lý người dùng", new ImageIcon(userImg), new ListUsers());
         
         // Tab Thông tin cá nhân
         ImageIcon profileIcon = new ImageIcon(getClass().getResource("/icons/profile.png"));

@@ -2,11 +2,13 @@ package view.manager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+
+import connection.DBConnection;
+
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.*;
 import java.sql.*;
-import utils.DBConnection;
 
 public class ListCategory extends JPanel {
     // Khai báo các thành phần UI
